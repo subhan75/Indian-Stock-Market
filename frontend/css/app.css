@@ -27,6 +27,14 @@ button, [role="option"], a { cursor: pointer; }
   background: var(--primary); color: var(--on-primary); font-size: 11px; font-weight: 700; letter-spacing: .02em;
 }
 
+/* Signed-in user and Log out, at the right of the top bar */
+.topbar { gap: var(--space-3); }
+.user-menu { margin-left: auto; display: flex; align-items: center; gap: var(--space-2); min-width: 0; font-size: 13px; color: var(--ink-3); }
+.user-email { max-width: 22ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.user-menu .link-btn-sm { min-height: 44px; min-width: 44px; padding: 0 var(--space-2); background: none; border: 0; font: 600 13px var(--font-sans); color: var(--ink-2); text-decoration: underline; text-underline-offset: 3px; }
+.user-menu .link-btn-sm:hover { color: var(--ink); }
+.btn-secondary { cursor: pointer; }
+
 /* Shared nav */
 .nav { display: flex; gap: var(--space-1); margin-bottom: var(--space-2); border-bottom: 1px solid var(--line); }
 .nav a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 var(--space-3); color: var(--ink-2); text-decoration: none; font-size: 14px; font-weight: 500; border-bottom: 2px solid transparent; margin-bottom: -1px; }

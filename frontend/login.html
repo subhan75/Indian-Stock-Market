@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sign in | Stock Analyst</title>
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%2314141a%27/%3E%3Ctext x=%2716%27 y=%2721%27 font-family=%27sans-serif%27 font-size=%2713%27 font-weight=%27700%27 fill=%27white%27 text-anchor=%27middle%27%3ESA%3C/text%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/app.css">
+  <link rel="stylesheet" href="/css/login.css">
+</head>
+<body>
+  <div class="wrap login-wrap">
+    <header class="topbar">
+      <span class="brand"><span class="brand-mark" aria-hidden="true">SA</span> Stock Analyst</span>
+    </header>
+
+    <main class="login-card">
+      <h1>Sign in</h1>
+      <p class="lead">Use the email and password for your account.</p>
+
+      <form id="login-form" novalidate>
+        <div class="field">
+          <label for="email">Email</label>
+          <input id="email" name="email" type="email" inputmode="email" autocomplete="username"
+                 autocapitalize="none" autocorrect="off" spellcheck="false" maxlength="254" required>
+        </div>
+
+        <div class="field">
+          <label for="password">Password</label>
+          <div class="password-row">
+            <input id="password" name="password" type="password" autocomplete="current-password" maxlength="256" required>
+            <button id="toggle-password" class="btn-secondary" type="button" aria-pressed="false"
+                    aria-controls="password">Show</button>
+          </div>
+        </div>
+
+        <p id="form-error" class="form-error" role="alert" hidden></p>
+
+        <button id="submit" class="btn" type="submit">Sign in</button>
+      </form>
+    </main>
+
+    <footer class="site-foot">Research aid, not financial advice.</footer>
+  </div>
+  <script type="module" src="/js/login.js"></script>
+</body>
+</html>
