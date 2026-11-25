@@ -45,6 +45,22 @@ you paid, or new serious news appeared since the previous report. The tag says *
 - AI problems are logged by the server (with API-key fragments removed), so a silent "summary isn't available"
   can be diagnosed from the terminal running uvicorn.
 
+## Market today (Phase 3)
+
+Open `/market.html`: Nifty 50 and Sensex (Yahoo Finance), up to 3 short points on what happened, the 10 newest
+market headlines (ET Markets and Business Standard, last 24 hours), which of your stocks are in the headlines,
+and the stocks you are watching.
+
+- The points are written by AI from exactly the headlines shown, and each sentence ends with a chip that opens
+  the headline it comes from. Text that cites a missing headline, invents a number or uses buy/sell/target/
+  recommend is rejected; if nothing passes, the page shows the headlines without points.
+- The market part is cached for 15 minutes (the Refresh button bypasses it). Your stocks and Watching are always
+  recomputed, so adding a stock shows up immediately.
+- "Your stocks in the news" matches headline **titles** against the company name or the all-caps ticker. It does
+  not know aliases (SBI, HUL), so those are missed in v0.
+- After the close and at weekends the index cards show the last session.
+- If a source fails, only its block says so, and the footer names it and when it last worked.
+
 ## Tuning
 
 Thresholds for the five questions are in [backend/app/config.py](backend/app/config.py). Change them after

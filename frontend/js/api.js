@@ -32,3 +32,5 @@ export const addHolding = (body) => api("/api/holdings", { method: "POST", body 
 export const editHolding = (symbol, body) => api(`/api/holdings/${enc(symbol)}`, { method: "PUT", body });
 export const removeHolding = (symbol) => api(`/api/holdings/${enc(symbol)}`, { method: "DELETE" });
 export const refreshAll = () => api("/api/refresh-all", { method: "POST" });
+
+export const getMarket = (refresh = false) => api(`/api/market/today${refresh ? "?refresh=true" : ""}`);
