@@ -6,21 +6,36 @@ number. It explains; it does not give buy or sell advice. *Research aid, not fin
 
 Design: [Documents/Architecture/V0_Description.md](Documents/Architecture/V0_Description.md).
 
-## Run it
+## Run it locally
+
+You need a Supabase project (see [Documents/Deployment/Deploy_Guide.md](Documents/Deployment/Deploy_Guide.md), Part A).
+Set these in your terminal or in a git-ignored `.env` (names are in `.env.example`; there is no secret key):
 
 ```powershell
 python -m venv venv                       # once
-venv\Scripts\python.exe -m pip install -r requirements.txt
+venv\Scripts\python.exe -m pip install -r requirements-dev.txt
+$env:SUPABASE_URL = "https://<ref>.supabase.co"
+$env:SUPABASE_PUBLISHABLE_KEY = "<publishable key>"
+$env:COOKIE_SECURE = "false"              # plain http on localhost
 venv\Scripts\python.exe -m uvicorn backend.app.main:app --reload
 ```
 
-Open http://127.0.0.1:8000. The first search downloads the NSE company list (about 2,600 stocks).
+Open http://127.0.0.1:8000 and sign in with an account you created in Supabase.
+
+**No Supabase yet?** `scripts/dev_fake_server.py` runs the whole app against an in-memory FAKE login and database, for
+trying the screens (it refuses to start unless you set `ALLOW_FAKE_SUPABASE=1`).
 
 ### AI text (optional)
 
-Copy `.env.example` to `.env` and fill in `OPENAI_API_KEY`, `LABELLER_MODEL` (small, cheap) and
-`WRITER_MODEL` (stronger). Without them everything still works, but the news question is grey and the
-written summary is replaced by "isn't available right now". `.env` is git-ignored.
+Set `OPENAI_API_KEY`, `LABELLER_MODEL` (small, cheap) and `WRITER_MODEL` (stronger). Without them everything else works,
+but the news question is grey and the written summary is replaced by "isn't available right now". The server prints why
+an AI call was skipped or rejected (never the key).
+
+## Deploying
+
+Frontend on Vercel, backend on Railway, data and login on Supabase:
+[Documents/Deployment/Deploy_Guide.md](Documents/Deployment/Deploy_Guide.md). Design and contracts:
+[Documents/Architecture/V1_Platform_Spec.md](Documents/Architecture/V1_Platform_Spec.md).
 
 ## Tests
 
@@ -28,7 +43,7 @@ written summary is replaced by "isn't available right now". `.env` is git-ignore
 venv\Scripts\python.exe -m pytest backend/tests
 ```
 
-All network access and the AI are faked in tests; Screener pages are trimmed real fixtures.
+All network access, the AI, Supabase Auth and the database are faked in tests (real network calls are blocked); Screener pages and RSS feeds are trimmed real fixtures. Tests that run against a real Supabase test project are skipped unless the `TEST_SUPABASE_*` variables are set (see the deploy guide).
 
 ## My stocks (Phase 2)
 
@@ -37,7 +52,7 @@ today's value, gain or loss, the stock's label and a **Look at this** tag when o
 the label is Be careful, the label got worse since the previous report, the price is 20% or more below what
 you paid, or new serious news appeared since the previous report. The tag says *why*, never what to do.
 
-- **Refresh all** rebuilds every report one at a time (about 5 seconds each). If Screener.in can't be reached
+- **Refresh all** rebuilds every report one stock per request (about 5 seconds each, with a live "3 of 10" status), so no single request runs long. If Screener.in can't be reached
   for a stock, its earlier report is kept and it is listed as failed.
 - Opening the page never calls Screener; it uses cached reports and fetches only live prices.
 - Totals leave out any stock whose price couldn't be fetched and say so.

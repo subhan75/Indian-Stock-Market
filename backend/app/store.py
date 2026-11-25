@@ -35,6 +35,7 @@ class NoStore(RuntimeError):
 
 
 class Store(Protocol):
+    user_id: str                                                            # whose data this is
     # holdings: {"symbol","shares","buy_price","watching","added_at"}, oldest first
     def holdings_list(self) -> list[dict]: ...
     def holdings_get(self, symbol: str) -> dict | None: ...
@@ -90,7 +91,8 @@ def install_test_store(store: "Store | None") -> None:
 class InMemoryStore:
     """Behaves like the Supabase store for one user, including the unique constraint and newest-N pruning."""
 
-    def __init__(self) -> None:
+    def __init__(self, user_id: str = "test-user") -> None:
+        self.user_id = user_id
         self._lock = threading.Lock()
         self._holdings: list[dict] = []
         self._reports: dict[tuple[str, str], dict] = {}     # (SYMBOL, generated_at) -> report

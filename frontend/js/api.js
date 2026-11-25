@@ -53,6 +53,8 @@ export const addHolding = (body) => api("/api/holdings", { method: "POST", body 
 export const editHolding = (symbol, body) => api(`/api/holdings/${enc(symbol)}`, { method: "PUT", body });
 export const removeHolding = (symbol) => api(`/api/holdings/${enc(symbol)}`, { method: "DELETE" });
 export const refreshAll = () => api("/api/refresh-all", { method: "POST" });
+// One stock per request keeps every request short (a proxy may cut off long ones) and lets the page show progress.
+export const refreshHolding = (symbol) => api(`/api/holdings/${enc(symbol)}/refresh`, { method: "POST" });
 
 // Market today
 export const getMarket = (refresh = false) => api(`/api/market/today${refresh ? "?refresh=true" : ""}`);

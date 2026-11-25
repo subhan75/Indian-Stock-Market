@@ -1,3 +1,6 @@
+# Everything needed to develop and test (includes the runtime dependencies).
 -r requirements.txt
-playwright
-pglast
+pytest==9.2.0
+PyJWT==2.15.1
+pglast==8.9
+playwright==1.65.2

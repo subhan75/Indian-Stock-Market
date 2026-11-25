@@ -44,6 +44,11 @@ def add_holding(body: Any = Body(...)):
     return saved
 
 
+@router.post("/holdings/{symbol}/refresh")
+def refresh_holding(symbol: str):
+    return refresh.refresh_one(symbol)
+
+
 @router.put("/holdings/{symbol}")
 def edit_holding(symbol: str, body: Any = Body(...)):
     saved = holdings.update(symbol, body)

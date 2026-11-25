@@ -1,0 +1,21 @@
+# Never bake secrets, local data or test tooling into the image.
+.env
+.env.*
+!.env.example
+venv/
+.git/
+.gitignore
+__pycache__/
+*.pyc
+.pytest_cache/
+backend/tests/
+scripts/
+Documents/
+supabase/
+*.sqlite3
+test.py
+test.md
+Dockerfile
+.dockerignore
+README.md
+requirements-dev.txt

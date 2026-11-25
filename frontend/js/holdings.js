@@ -1,4 +1,4 @@
-import { addHolding, editHolding, getHoldings, refreshAll, removeHolding } from "./api.js";
+import { addHolding, editHolding, getHoldings, refreshHolding, removeHolding } from "./api.js";
 import { initCombobox } from "./combobox.js";
 import { flagPill, labelPill, plainPill } from "./labels.js";
 import { arrowIcon, el, reportLink } from "./ui.js";
@@ -338,18 +338,26 @@ function setBusy(on) {
 
 refreshBtn.addEventListener("click", async () => {
   if (busy) return;
-  const count = data?.rows.length ?? 0;
+  const rows = data?.rows ?? [];
+  if (!rows.length) return setStatus("There are no stocks to refresh yet.");
   setBusy(true);
-  setStatus(count
-    ? `Refreshing ${count} ${count === 1 ? "stock" : "stocks"}. This takes about 5 seconds per stock.`
-    : "Refreshing…", "busy");
-  try {
-    summary(await refreshAll());
-  } catch (err) {
-    setStatus(err.message, "error");
-  } finally {
-    setBusy(false);
+  const result = { refreshed: [], failed: [], new_flags: [] };
+  for (const [i, row] of rows.entries()) {
+    setStatus(`Refreshing ${i + 1} of ${rows.length}: ${row.symbol}. This takes about 5 seconds per stock.`, "busy");
+    try {
+      const r = await refreshHolding(row.symbol);
+      if (r.refreshed) {
+        result.refreshed.push(r.symbol);
+        if (r.new_flag) result.new_flags.push(r.symbol);
+      } else {
+        result.failed.push({ symbol: r.symbol, reason: r.failed.reason });
+      }
+    } catch (err) {
+      result.failed.push({ symbol: row.symbol, reason: err.message });   // one stock failing never stops the rest
+    }
   }
+  summary(result);
+  setBusy(false);
   await load(false);
 });
 

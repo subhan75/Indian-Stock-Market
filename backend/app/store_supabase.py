@@ -84,6 +84,7 @@ class SupabaseStore:
     def __init__(self, client: Client, user_id: str) -> None:
         self._db = client
         self._user = user_id
+        self.user_id = user_id
 
     # ------------------------------------------------------------------ holdings
     _HOLDING_COLUMNS = "symbol,shares,buy_price,watching,added_at"

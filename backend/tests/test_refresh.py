@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from backend.app import holdings, refresh, report
+from backend.app import holdings, refresh, report, store
 from backend.app.errors import ApiError
 from backend.app.main import app
 from backend.app.sources import news as news_src
@@ -190,8 +190,9 @@ def test_the_lock_is_released_even_if_the_run_blows_up(monkeypatch):
     with pytest.raises(RuntimeError):
         refresh.refresh_all()
     monkeypatch.undo()
-    assert refresh._lock.acquire(blocking=False)
-    refresh._lock.release()
+    mine = refresh._lock_for(store.current().user_id)
+    assert mine.acquire(blocking=False)
+    mine.release()
 
 
 # ------------------------------------------------------------------ the real per-stock refresh (decision D3)
@@ -248,11 +249,103 @@ def test_endpoint_returns_the_documented_shape_and_busy_error(monkeypatch):
         r = client.post("/api/refresh-all")
         assert r.status_code == 200
         assert r.json() == {"refreshed": ["ABB"], "failed": [], "new_flags": ["ABB"]}
-        assert refresh._lock.acquire(blocking=False)
+        mine = refresh._lock_for(store.current().user_id)
+        assert mine.acquire(blocking=False)
         try:
             busy = client.post("/api/refresh-all")
         finally:
-            refresh._lock.release()
+            mine.release()
         assert busy.status_code == 400
         assert busy.json() == {"error": {"code": "bad_request",
                                          "message": "A refresh is already running. Try again in a minute."}}
+
+
+# ------------------------------------------------------------------ one user's refresh never blocks another's
+def test_each_person_has_their_own_refresh_lock():
+    assert refresh._lock_for("user-a") is refresh._lock_for("user-a")
+    assert refresh._lock_for("user-a") is not refresh._lock_for("user-b")
+
+
+def test_someone_elses_running_refresh_does_not_block_mine(monkeypatch):
+    add("ABB")
+    scripted(monkeypatch, {"ABB": make_report("ABB")})
+    other = refresh._lock_for("another-user")
+    assert other.acquire(blocking=False)
+    try:
+        assert refresh.refresh_all()["refreshed"] == ["ABB"]
+    finally:
+        other.release()
+
+
+# ------------------------------------------------------------------ refreshing one stock (what the page calls per stock)
+def test_refresh_one_success_shape(monkeypatch):
+    add("ABB")
+    report._save(make_report("ABB", "looks_solid", when="2026-11-20T10:00:00+05:30"))
+    scripted(monkeypatch, {"ABB": make_report("ABB", "looks_solid")})
+    assert refresh.refresh_one("abb") == {"symbol": "ABB", "refreshed": True, "failed": None, "new_flag": False}
+
+
+def test_refresh_one_reports_a_screener_failure_and_keeps_the_old_report(monkeypatch):
+    add("ABB")
+    report._save(make_report("ABB"))
+    scripted(monkeypatch, {"ABB": report.ScreenerUnavailable("ABB")})
+    assert refresh.refresh_one("ABB") == {
+        "symbol": "ABB", "refreshed": False, "new_flag": False,
+        "failed": {"reason": "Screener.in couldn't be reached, so the earlier report was kept."}}
+
+
+def test_refresh_one_with_no_earlier_report_says_so(monkeypatch):
+    add("ABB")
+    scripted(monkeypatch, {"ABB": report.ScreenerUnavailable("ABB")})
+    assert refresh.refresh_one("ABB")["failed"] == {"reason": "Screener.in couldn't be reached."}
+
+
+def test_refresh_one_flags_only_a_newly_gained_reason(monkeypatch):
+    add("ABB")
+    report._save(make_report("ABB", "looks_solid", when="2026-11-20T10:00:00+05:30"))
+    scripted(monkeypatch, {"ABB": make_report("ABB", "be_careful")})
+    assert refresh.refresh_one("ABB")["new_flag"] is True
+    scripted(monkeypatch, {"ABB": make_report("ABB", "be_careful")})
+    assert refresh.refresh_one("ABB")["new_flag"] is False, "the same flag is not new the second time"
+
+
+def test_refresh_one_works_for_a_watched_stock(monkeypatch):
+    add("TITAN", watching=True)
+    scripted(monkeypatch, {"TITAN": make_report("TITAN")})
+    assert refresh.refresh_one("TITAN")["refreshed"] is True
+
+
+def test_refresh_one_for_a_stock_you_do_not_have_is_404(monkeypatch):
+    scripted(monkeypatch, {})
+    with pytest.raises(ApiError) as err:
+        refresh.refresh_one("ABB")
+    assert err.value.code == "not_found" and err.value.message == "ABB isn't in your stocks."
+    with pytest.raises(ApiError) as bad:
+        refresh.refresh_one("not a symbol!")
+    assert bad.value.code == "bad_request"
+
+
+def test_refresh_one_hides_unexpected_errors(monkeypatch):
+    add("ABB")
+    scripted(monkeypatch, {"ABB": RuntimeError("secret internal detail")})
+    out = refresh.refresh_one("ABB")
+    assert out["failed"] == {"reason": "Something unexpected went wrong."} and "secret" not in str(out)
+
+
+def test_a_database_failure_while_refreshing_is_not_hidden_as_a_stock_failure(monkeypatch):
+    add("ABB")
+    scripted(monkeypatch, {"ABB": store.StoreError("db down")})
+    with pytest.raises(store.StoreError):
+        refresh.refresh_one("ABB")
+
+
+def test_refresh_one_endpoint(monkeypatch):
+    add("ABB")
+    scripted(monkeypatch, {"ABB": make_report("ABB", "be_careful")})
+    with TestClient(app) as client:
+        r = client.post("/api/holdings/ABB/refresh")
+        assert r.status_code == 200
+        assert r.json() == {"symbol": "ABB", "refreshed": True, "failed": None, "new_flag": True}
+        missing = client.post("/api/holdings/TITAN/refresh")
+        assert missing.status_code == 404
+        assert missing.json() == {"error": {"code": "not_found", "message": "TITAN isn't in your stocks."}}
