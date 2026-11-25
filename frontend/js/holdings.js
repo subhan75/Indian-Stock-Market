@@ -1,6 +1,7 @@
 import { addHolding, editHolding, getHoldings, refreshHolding, removeHolding } from "./api.js";
 import { initCombobox } from "./combobox.js";
 import { flagPill, labelPill, plainPill } from "./labels.js";
+import { busyButton, loadingNote, spinnerIcon } from "./loading.js";
 import { arrowIcon, el, reportLink } from "./ui.js";
 
 const content = document.getElementById("content");
@@ -32,7 +33,11 @@ let busy = false;
 function setStatus(message, kind = "") {
   statusEl.className = `status ${kind}`.trim();
   statusEl.replaceChildren();
-  if (message) statusEl.append(el("p", null, message));
+  if (!message) return;
+  const line = el("p", kind === "busy" ? "status-busy" : null);
+  if (kind === "busy") line.append(spinnerIcon());
+  line.append(message);
+  statusEl.append(line);
 }
 
 // ---------------------------------------------------------------- list
@@ -156,9 +161,14 @@ function renderList() {
   content.lastChild.style.fontSize = "13px";
 }
 
+let stopLoading = () => {};
+
 function renderLoading() {
+  stopLoading();
   totalsEl.hidden = true;
-  content.replaceChildren(el("div", "skeleton sk-row"), el("div", "skeleton sk-row"), el("div", "skeleton sk-row"));
+  const note = loadingNote("Loading your stocks…");
+  stopLoading = note.stop;
+  content.replaceChildren(note.node, el("div", "skeleton sk-row"), el("div", "skeleton sk-row"), el("div", "skeleton sk-row"));
 }
 
 function renderError(message) {
@@ -179,8 +189,10 @@ async function load(showSkeleton) {
   if (showSkeleton) renderLoading();
   try {
     data = await getHoldings();
+    stopLoading();
     renderList();
   } catch (err) {
+    stopLoading();
     renderError(err.message);
   } finally {
     content.setAttribute("aria-busy", "false");
@@ -217,6 +229,7 @@ function confirmAction(message, yesLabel) {
 async function removeRow(row) {
   const ok = await confirmAction(`Remove ${row.name} from My stocks? Its saved reports are kept.`, "Remove");
   if (!ok) return;
+  setStatus(`Removing ${row.name}…`, "busy");
   try {
     await removeHolding(row.symbol);
     setStatus(`Removed ${row.name}.`);
@@ -297,8 +310,7 @@ form.addEventListener("submit", async (e) => {
   }
 
   showFormError("");
-  saveBtn.disabled = true;
-  saveBtn.textContent = "Saving…";
+  const restoreSave = busyButton(saveBtn, "Saving…");
   try {
     const saved = editing ? await editHolding(editing.symbol, body) : await addHolding(body);
     dialog.close();
@@ -307,8 +319,7 @@ form.addEventListener("submit", async (e) => {
   } catch (err) {
     showFormError(err.message);
   } finally {
-    saveBtn.disabled = false;
-    saveBtn.textContent = "Save";
+    restoreSave();
   }
 });
 
@@ -330,10 +341,17 @@ function summary(result) {
     : "No new flags."));
 }
 
+let restoreRefresh = null;
+
 function setBusy(on) {
   busy = on;
-  [addBtn, refreshBtn].forEach((b) => { b.disabled = on; });
-  refreshBtn.textContent = on ? "Refreshing…" : "Refresh all";
+  addBtn.disabled = on;
+  if (on) {
+    restoreRefresh = busyButton(refreshBtn, "Refreshing…");
+  } else if (restoreRefresh) {
+    restoreRefresh();
+    restoreRefresh = null;
+  }
 }
 
 refreshBtn.addEventListener("click", async () => {

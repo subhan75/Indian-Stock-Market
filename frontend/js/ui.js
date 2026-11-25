@@ -23,6 +23,8 @@ export function externalLink(url, text, className) {
   a.href = href;
   a.target = "_blank";
   a.rel = "noopener noreferrer";
+  const note = el("span", "sr-only", " (opens in a new tab)");
+  a.append(note);
   return a;
 }
 

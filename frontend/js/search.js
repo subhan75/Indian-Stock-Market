@@ -1,6 +1,7 @@
 import { recentReports, reportUrl } from "./api.js";
 import { initCombobox } from "./combobox.js";
 import { labelPill } from "./labels.js";
+import { loadingNote } from "./loading.js";
 
 initCombobox({
   form: document.getElementById("search-form"),
@@ -26,8 +27,14 @@ function note(text) {
 }
 
 async function loadRecent() {
+  const loading = loadingNote("Loading your stocks…");
+  const row = document.createElement("li");
+  row.className = "empty";
+  row.append(loading.node);
+  recentEl.replaceChildren(row);
   try {
     const rows = await recentReports();
+    loading.stop();
     if (!rows.length) return note("Nothing yet. Search for a stock above and its report will show up here.");
     recentEl.replaceChildren();
     for (const r of rows) {
@@ -52,6 +59,7 @@ async function loadRecent() {
       recentEl.append(li);
     }
   } catch {
+    loading.stop();
     note("Couldn't load earlier reports right now.");
   }
 }

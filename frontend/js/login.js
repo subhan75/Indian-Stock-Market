@@ -1,4 +1,5 @@
 import { getMe, login } from "./api.js";
+import { busyButton } from "./loading.js";
 
 const form = document.getElementById("login-form");
 const email = document.getElementById("email");
@@ -45,14 +46,12 @@ form.addEventListener("submit", async (event) => {
   if (!password.value) return showError("Enter your email and password.", password);
 
   showError("");
-  submit.disabled = true;
-  submit.textContent = "Signing in…";
+  const restore = busyButton(submit, "Signing in…");
   try {
     await login(emailValue, password.value);
     window.location.replace(nextPage());
   } catch (err) {
-    submit.disabled = false;
-    submit.textContent = "Sign in";
+    restore();
     password.value = "";
     showError(err.message, password);
   }

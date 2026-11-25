@@ -1,4 +1,5 @@
 import { searchStocks, reportUrl } from "./api.js";
+import { busyButton, spinnerIcon } from "./loading.js";
 
 // Accessible stock-search combobox.
 // - Search pages: pass `form`; choosing a stock opens its report.
@@ -8,6 +9,9 @@ export function initCombobox({ form = null, input, list, hint = null, onSelect =
   let active = -1;
   let timer = null;
   let latest = 0;
+  const spin = spinnerIcon("combo-spinner");          // inside the box, only while a search is running
+  spin.hidden = true;
+  input.parentElement.append(spin);
 
   const setHint = (text, isError = false) => {
     if (!hint) return;
@@ -59,6 +63,8 @@ export function initCombobox({ form = null, input, list, hint = null, onSelect =
 
   async function lookup(q) {
     const ticket = ++latest;
+    spin.hidden = false;
+    setHint("Searching…");
     try {
       const items = await searchStocks(q);
       if (ticket !== latest) return; // a newer keystroke won
@@ -68,6 +74,8 @@ export function initCombobox({ form = null, input, list, hint = null, onSelect =
       if (ticket !== latest) return;
       renderOptions([]);
       setHint(err.message, true);
+    } finally {
+      if (ticket === latest) spin.hidden = true;
     }
   }
 
@@ -98,7 +106,10 @@ export function initCombobox({ form = null, input, list, hint = null, onSelect =
       const q = input.value.trim();
       if (!q) { setHint("Type a company name or NSE symbol first.", true); return; }
       clearTimeout(timer);
+      const submitButton = form.querySelector('button[type="submit"]');
+      const restore = submitButton ? busyButton(submitButton, "Searching…") : () => {};
       await lookup(q);
+      restore();
       if (options.length) choose(options[0]);
     });
   }

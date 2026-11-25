@@ -99,3 +99,5 @@ dialog h2 { margin: 0 0 var(--space-4); font-size: 18px; }
   .dialog-actions { flex-direction: column-reverse; }
   .dialog-actions .btn, .dialog-actions .btn-secondary { width: 100%; }
 }
+
+.status-busy { display: flex; align-items: center; }

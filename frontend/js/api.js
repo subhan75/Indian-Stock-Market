@@ -6,8 +6,13 @@ export function loginUrl() {
   return here === "/login.html" ? "/login.html" : `/login.html?next=${encodeURIComponent(here)}`;
 }
 
+const TIMEOUT_MS = 100000;    // a proxy in front may cut off at 120 s, so give up a little earlier with a clear message
+
 export async function api(path, options = {}) {
-  const init = { method: options.method || "GET", headers: { Accept: "application/json" }, credentials: "same-origin" };
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), options.timeoutMs ?? TIMEOUT_MS);
+  const init = { method: options.method || "GET", headers: { Accept: "application/json" }, credentials: "same-origin",
+                 signal: controller.signal };
   if (options.body !== undefined) {
     init.headers["Content-Type"] = "application/json";
     init.body = JSON.stringify(options.body);
@@ -15,11 +20,15 @@ export async function api(path, options = {}) {
   let res;
   try {
     res = await fetch(path, init);
-  } catch {
-    throw new Error("Couldn't reach the server. Is it running?");
+  } catch (err) {
+    clearTimeout(timer);
+    if (err?.name === "AbortError") throw new Error("This is taking too long. Check your connection and try again.");
+    throw new Error(navigator.onLine === false
+      ? "You're offline. Reconnect and try again."
+      : "Couldn't reach the server. Check your connection and try again.");
   }
   let body = null;
-  try { body = await res.json(); } catch { /* non-JSON error page */ }
+  try { body = await res.json(); } catch { /* non-JSON error page */ } finally { clearTimeout(timer); }
   if (res.status === 401 && !options.noRedirect) {
     window.location.assign(loginUrl());
     return new Promise(() => {}); // never settles: the page is leaving, so nothing half-renders

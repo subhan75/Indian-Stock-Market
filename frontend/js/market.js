@@ -1,5 +1,6 @@
 import { getMarket } from "./api.js";
 import { labelPill, plainPill } from "./labels.js";
+import { loadingNote } from "./loading.js";
 import { arrowIcon, el, externalLink, reportLink } from "./ui.js";
 
 const root = document.getElementById("market");
@@ -40,7 +41,7 @@ function renderHead(m) {
   left.append(h1, el("p", null, `As of ${m.as_of}`));
   const btn = el("button", "btn-secondary", "Refresh");
   btn.type = "button";
-  btn.addEventListener("click", () => load(true, btn));
+  btn.addEventListener("click", () => load(true));
   head.append(left, btn);
   return head;
 }
@@ -165,16 +166,21 @@ function renderSources(m) {
 }
 
 // ---------------------------------------------------------------- states
+let stopLoading = () => {};
+
 function showLoading() {
+  stopLoading();
   root.setAttribute("aria-busy", "true");
-  root.replaceChildren(el("div", "skeleton sk-title"), el("div", "skeleton sk-card"), el("div", "skeleton sk-card"),
+  const heading = el("h1", "load-title", "Market today");
+  heading.tabIndex = -1;
+  const note = loadingNote("Getting today's market. This can take a few seconds.");
+  stopLoading = note.stop;
+  root.replaceChildren(heading, note.node, el("div", "skeleton sk-card"), el("div", "skeleton sk-card"),
                        el("div", "skeleton sk-card"));
-  const note = el("p", "loading-note", "Getting today's market. This can take a few seconds.");
-  note.setAttribute("role", "status");
-  root.append(note);
 }
 
 function showError(message) {
+  stopLoading();
   root.setAttribute("aria-busy", "false");
   const section = el("section", "card error-card");
   section.append(el("h2", null, "We couldn't load the market page"), el("p", null, message));
@@ -187,11 +193,11 @@ function showError(message) {
   root.replaceChildren(section);
 }
 
-async function load(refresh, btn) {
-  if (btn) { btn.disabled = true; btn.textContent = "Refreshing…"; }
+async function load(refresh) {
   showLoading();
   try {
     const m = await getMarket(refresh);
+    stopLoading();
     root.replaceChildren(renderHead(m), renderIndices(m), renderPoints(m), renderHeadlines(m),
                          renderYourStocks(m), renderWatching(m), renderSources(m));
     root.setAttribute("aria-busy", "false");

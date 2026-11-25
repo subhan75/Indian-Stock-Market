@@ -1,6 +1,7 @@
 import { getReport } from "./api.js";
 import { initCombobox } from "./combobox.js";
 import { labelPill, statusPill } from "./labels.js";
+import { loadingNote } from "./loading.js";
 import { arrowIcon, el, externalLink } from "./ui.js";
 
 initCombobox({
@@ -186,20 +187,22 @@ function renderFooter(r, onRefresh) {
 }
 
 // ---------------------------------------------------------------- states
+let stopLoading = () => {};
+
 function showLoading(label) {
+  stopLoading();
   root.setAttribute("aria-busy", "true");
-  root.replaceChildren(
-    el("div", "skeleton sk-title"),
-    el("div", "skeleton sk-card"),
-    el("div", "skeleton sk-card"),
-    el("div", "skeleton sk-card"),
-  );
-  const note = el("p", "loading-note", label);
-  note.setAttribute("role", "status");
-  root.append(note);
+  const heading = el("h1", "load-title", symbol ? `Report for ${symbol}` : "Stock report");
+  heading.tabIndex = -1;
+  const note = loadingNote(label);
+  stopLoading = note.stop;
+  document.title = `${symbol} report | Stock Analyst`;
+  root.replaceChildren(heading, note.node, el("div", "skeleton sk-card"), el("div", "skeleton sk-card"),
+                       el("div", "skeleton sk-card"));
 }
 
 function showError(message) {
+  stopLoading();
   root.setAttribute("aria-busy", "false");
   const card = el("section", "card error-card");
   card.append(el("h2", null, "We couldn't open this report"), el("p", null, message));
@@ -215,6 +218,7 @@ function showError(message) {
 }
 
 function showReport(r) {
+  stopLoading();
   document.title = `${r.name} (${r.symbol}) | Stock Analyst`;
   const parts = [renderHeader(r), renderOverall(r), renderAbout(r), renderQuestions(r), renderNews(r),
                  renderFacts(r), renderFooter(r, (btn) => refresh(btn))].filter(Boolean);

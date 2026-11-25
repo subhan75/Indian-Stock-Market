@@ -95,3 +95,7 @@ details.card summary { cursor: pointer; font-weight: 600; font-size: 15px; }
   .q-row > .pill { justify-self: start; }
   .facts .fact-text { max-width: none; }
 }
+
+/* Headline shown while a page's data loads, so the page always has an h1 */
+.load-title { margin: var(--space-5) 0 var(--space-1); font-size: clamp(24px, 5vw, 32px); line-height: 1.15; letter-spacing: -0.02em; }
+.load-title:focus { outline: none; }
