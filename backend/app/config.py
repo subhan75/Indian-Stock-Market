@@ -29,6 +29,20 @@ PE_GREEN_MAX_RATIO = 1.0
 PE_AMBER_MAX_RATIO = 1.5
 MIN_PEERS = 3                # to confirm while building
 
+# Phase 2 (My stocks)
+FLAG_PRICE_DROP_PCT = 20
+MAX_HOLDINGS = 100
+MAX_SHARES = 10_000_000
+MAX_BUY_PRICE = 10_000_000
+
+# Phase 3 (Market today)
+MARKET_CACHE_MINUTES = 15
+MARKET_WINDOW_HOURS = 24
+MARKET_HEADLINES_SHOWN = 10
+MARKET_POINTS_MAX = 3
+MATCH_MAX_PER_STOCK = 3
+MATCH_MAX_TOTAL = 10
+
 TRUSTED_OUTLETS = [
     "Economic Times", "Business Standard", "Mint", "Moneycontrol",
     "The Hindu BusinessLine", "Financial Express", "CNBC-TV18", "Reuters",

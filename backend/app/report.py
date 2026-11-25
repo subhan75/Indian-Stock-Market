@@ -42,6 +42,16 @@ def latest_report(symbol: str) -> dict | None:
     return json.loads(row["report_json"]) if row else None
 
 
+def recent_reports(symbol: str, n: int = 2) -> list[dict]:
+    """The n newest stored reports for a stock, newest first."""
+    with connect() as conn:
+        rows = conn.execute(
+            "SELECT report_json FROM reports WHERE symbol = ? COLLATE NOCASE ORDER BY generated_at DESC LIMIT ?",
+            (symbol, n),
+        ).fetchall()
+    return [json.loads(r["report_json"]) for r in rows]
+
+
 def _fresh(report: dict) -> bool:
     try:
         age = datetime.now(IST) - datetime.fromisoformat(report["generated_at"])
@@ -82,6 +92,9 @@ def _company(symbol: str) -> dict:
     if company is None:
         raise ApiError("not_found", f"{symbol} isn't on the NSE equity list. Check the symbol or search by company name.")
     return company
+
+
+resolve_company = _company  # public name for other modules (holdings)
 
 
 def _last_ok_times(symbol: str) -> dict[str, str]:

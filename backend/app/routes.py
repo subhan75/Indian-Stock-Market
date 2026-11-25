@@ -1,6 +1,8 @@
-from fastapi import APIRouter, Query
+from typing import Any
 
-from . import report
+from fastapi import APIRouter, Body, Query
+
+from . import holdings, report
 from .db import connect
 from .errors import ApiError
 from .sources import nse
@@ -34,6 +36,25 @@ def recent_reports(limit: int = Query(10, ge=1, le=50)):
             (limit,),
         ).fetchall()
     return [dict(r) for r in rows]
+
+
+@router.post("/holdings", status_code=201)
+def add_holding(body: Any = Body(...)):
+    saved = holdings.create(body)
+    holdings.ensure_report(saved["symbol"])
+    return saved
+
+
+@router.put("/holdings/{symbol}")
+def edit_holding(symbol: str, body: Any = Body(...)):
+    saved = holdings.update(symbol, body)
+    holdings.ensure_report(saved["symbol"])
+    return saved
+
+
+@router.delete("/holdings/{symbol}")
+def remove_holding(symbol: str):
+    return holdings.delete(symbol)
 
 
 # Registered after /reports/recent so the literal path wins over {symbol}.

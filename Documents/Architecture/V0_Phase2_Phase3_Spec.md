@@ -64,7 +64,8 @@ CREATE TABLE IF NOT EXISTS holdings (
   buy_price REAL,
   watching  INTEGER NOT NULL DEFAULT 0 CHECK (watching IN (0, 1)),
   added_at  TEXT NOT NULL,                      -- ISO 8601 with +05:30
-  CHECK (watching = 1 OR (shares > 0 AND buy_price > 0))
+  CHECK (watching = 1 OR (shares IS NOT NULL AND buy_price IS NOT NULL AND shares > 0 AND buy_price > 0))
+  -- the IS NOT NULL parts matter: SQLite treats a NULL CHECK result as a pass
 );
 CREATE TABLE IF NOT EXISTS flags_sent (
   symbol  TEXT NOT NULL,
