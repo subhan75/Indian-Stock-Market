@@ -1,0 +1,37 @@
+"""Central settings. Cut-offs live here so they are easy to tune after reading real reports."""
+import os
+from pathlib import Path
+
+from dotenv import load_dotenv
+
+ROOT = Path(__file__).resolve().parents[2]
+load_dotenv(ROOT / ".env")
+
+DB_PATH = Path(os.getenv("DB_PATH", ROOT / "stock_analyst.sqlite3"))
+FRONTEND_DIR = ROOT / "frontend"
+
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+LABELLER_MODEL = os.getenv("LABELLER_MODEL", "")
+WRITER_MODEL = os.getenv("WRITER_MODEL", "")
+
+CACHE_TTL_HOURS = 24
+COMPANY_LIST_TTL_DAYS = 7
+
+# Question cut-offs (v0 doc, "The five questions")
+GROWTH_GREEN_MIN = 10.0      # % sales growth, last 4 quarters vs previous 4
+GROWTH_AMBER_MIN = 0.0
+ROCE_GREEN_MIN = 15.0
+ROCE_AMBER_MIN = 10.0
+DEBT_GREEN_MAX = 0.5
+DEBT_AMBER_MAX = 1.0
+PE_GREEN_MAX_RATIO = 1.0
+PE_AMBER_MAX_RATIO = 1.5
+MIN_PEERS = 3                # to confirm while building
+
+TRUSTED_OUTLETS = [
+    "Economic Times", "Business Standard", "Mint", "Moneycontrol",
+    "The Hindu BusinessLine", "Financial Express", "CNBC-TV18", "Reuters",
+]
+
+BANNED_WORDS = ["buy", "sell", "target", "recommend"]
+DISCLAIMER = "Research aid, not financial advice."
