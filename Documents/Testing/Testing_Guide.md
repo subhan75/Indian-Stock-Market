@@ -15,30 +15,43 @@ Contents: [0 Setup](#0-setup) · [1 The automated suite](#1-the-automated-suite)
 
 Open PowerShell in the project folder. Everything below uses the project's own Python (`venv`).
 
-### 0.1 Use a throwaway database for manual testing
-The app stores holdings and reports in `stock_analyst.sqlite3`. Test against a temporary copy so your real
-holdings are never touched:
+The app now needs a **signed-in user** for everything except `/api/health`. There are two ways to run it for testing.
+
+### 0.1 Quickest: the fake login and database (no Supabase needed)
+`scripts/dev_fake_server.py` runs the real app against an in-memory **fake** Supabase. Nothing real is touched, and
+everything you save disappears when you stop it. The data sources (Screener, news, prices, OpenAI) are the real ones.
 
 ```powershell
-$env:DB_PATH = "$env:TEMP\test_run.sqlite3"
-Remove-Item $env:DB_PATH -ErrorAction SilentlyContinue      # start empty
-venv\Scripts\python.exe -m uvicorn backend.app.main:app --port 8000
+$env:ALLOW_FAKE_SUPABASE = "1"
+venv\Scripts\python.exe scripts\dev_fake_server.py 8000
 ```
-Leave that window running. **Open a second PowerShell window** for the commands below. When you are done, press
-Ctrl+C in the first window and delete the file. To go back to your real data, close the window (the variable
-only lives in that window) or run `Remove-Item Env:DB_PATH`.
+It prints two fake accounts. Use `dev@example.com` / `dev-password-123` (and `partner@example.com` /
+`partner-password-123` when a test needs a second person). Open <http://127.0.0.1:8000>. Stop it with Ctrl+C.
 
-The first search downloads the NSE company list (about 2,600 stocks), so it takes a few seconds once.
+### 0.2 Against your real Supabase project (use a TEST account, never your real one)
+Set `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` and `COOKIE_SECURE=false` as in the README, run
+`venv\Scripts\python.exe -m uvicorn backend.app.main:app`, and sign in with an account you created in Supabase for testing.
+Reports and holdings are saved to that account, so a separate test account keeps your real data clean.
 
-### 0.2 The PowerShell helper (paste once per window)
-Windows PowerShell 5.1 shows `₹` as `â¹` and hides error bodies unless told otherwise. This helper fixes both:
+### 0.3 The PowerShell helper (paste once per window)
+It signs in once and then sends the session cookie with every call, decodes UTF-8 (so `₹` shows correctly in Windows
+PowerShell 5.1), and prints error bodies. Change `$Base` if you used another port.
 
 ```powershell
 [Console]::OutputEncoding = [Text.Encoding]::UTF8
 $Base = "http://127.0.0.1:8000"
+$Session = $null
+function Login($Email, $Password) {
+  $r = Invoke-WebRequest "$Base/api/auth/login" -Method POST -ContentType "application/json" `
+        -Body (@{ email = $Email; password = $Password } | ConvertTo-Json -Compress) `
+        -Headers @{ Origin = $Base } -SessionVariable s -UseBasicParsing
+  $script:Session = $s
+  [Text.Encoding]::UTF8.GetString($r.RawContentStream.ToArray())
+}
 function Api($Method, $Path, $Body = $null) {
   try {
-    $p = @{ Uri = "$Base$Path"; Method = $Method; ContentType = "application/json"; UseBasicParsing = $true }
+    $p = @{ Uri = "$Base$Path"; Method = $Method; ContentType = "application/json"; UseBasicParsing = $true; Headers = @{ Origin = $Base } }
+    if ($script:Session) { $p.WebSession = $script:Session }
     if ($null -ne $Body) { $p.Body = ($Body | ConvertTo-Json -Compress) }
     $r = Invoke-WebRequest @p
     "HTTP $([int]$r.StatusCode) " + [Text.Encoding]::UTF8.GetString($r.RawContentStream.ToArray())
@@ -48,50 +61,53 @@ function Api($Method, $Path, $Body = $null) {
   }
 }
 ```
-Usage: `Api GET "/api/health"` or `Api POST "/api/holdings" @{symbol="ABB"; shares=10; buy_price=10000}`.
+Try it (these outputs were checked):
+```powershell
+Api GET "/api/holdings"                              # HTTP 401 {"error":{"code":"unauthorized","message":"Please sign in."}}
+Login "dev@example.com" "dev-password-123"           # {"user":{"email":"dev@example.com"}}
+Api GET "/api/auth/me"                               # HTTP 200 {"user":{"email":"dev@example.com"}}
+```
+`Api GET "/api/health"` is the only call that needs no login.
 
-Smoke test: `Api GET "/api/health"` should print `HTTP 200 {"ok":true}`.
-
-### 0.3 How to read a result
-Each test below has **Do**, **Expect** and (where useful) **Pass if**. Error bodies always look like
-`{"error":{"code":"...","message":"..."}}`, and the **message** wording is part of what is tested.
+### 0.4 How to read a result
+Each test has **Do**, **Expect** and (where useful) **Pass if**. Error bodies always look like
+`{"error":{"code":"...","message":"..."}}`, and the **message** wording is part of what is tested. Every example below
+assumes you ran `Login` first.
 
 ---
 
 ## 1. The automated suite
 
-449 tests. None of them touch the internet or a real AI: sources are replaced by fakes, and Screener pages and
-RSS feeds are saved real samples in `backend/tests/fixtures/`. Each test gets its own empty database.
+703 tests (682 run offline and 21 more only when you provide a real Supabase test project, see the deploy guide). None of
+them touch the internet, a real AI, or a real login: sources, Supabase Auth and the database are replaced by fakes (real
+network calls are *blocked* in tests), and Screener pages and RSS feeds are saved real samples in `backend/tests/fixtures/`.
 
 ```powershell
-venv\Scripts\python.exe -m pytest backend/tests -q                  # everything (about 40 seconds)
+venv\Scripts\python.exe -m pytest backend/tests -q                  # everything (about 15 seconds)
 venv\Scripts\python.exe -m pytest backend/tests/test_flags.py -q    # one file
 venv\Scripts\python.exe -m pytest backend/tests -q -k "outage"      # tests whose name contains "outage"
-venv\Scripts\python.exe -m pytest backend/tests/test_flags.py::test_outage_guard_ignores_a_label_drop_caused_by_a_newly_grey_question -q
 venv\Scripts\python.exe -m pytest backend/tests -q -x               # stop at the first failure
 ```
-**Expect:** a last line like `449 passed in 40s`. A failure prints the test name, the line, and
-`assert <actual> == <expected>`; fix the code or, if the behaviour was deliberately changed, the test and the
-spec.
+**Expect:** a last line like `682 passed, 21 skipped in 14s`. A failure prints the test name, the line, and
+`assert <actual> == <expected>`; fix the code or, if the behaviour was deliberately changed, the test and the spec.
 
 | File | Tests | What it proves |
 |---|---:|---|
 | `test_health.py` | 1 | The app starts and `/api/health` answers |
-| `test_search.py` | 6 | NSE list parsing (EQ/BE only), search ranking, weekly staleness, recent-reports list |
-| `test_screener.py` | 31 | Parsing 7 real pages (normal, bank, loss-maker, blank), 24 h cache, consolidated→standalone fallback, URL safety |
+| `test_search.py`, `test_memcache_nse.py` | 29 | NSE list parsing, search ranking, the bundled fallback list, the in-memory caches |
+| `test_screener.py` | 31 | Parsing 7 real pages (normal, bank, loss-maker, blank), 24 h cache, consolidated→standalone fallback |
 | `test_scoring.py` | 65 | All five questions at every boundary, lender rule, grey rules, overall label, ₹ formatting |
 | `test_news_prices.py` | 31 | Google News trusted-outlet filter, 30-day window, de-duplication; price fallback; IST time |
-| `test_ai.py` | 40 | Headline labeller, report writer, citation checker (every rejection), retry once |
-| `test_ai_logging.py` | 5 | AI failures are logged with a reason and never log an API key |
+| `test_ai.py`, `test_ai_logging.py` | 45 | Headline labeller, report writer, citation checker (every rejection), retry once, logs never contain a key |
 | `test_report.py` | 21 | Full report contract, cache and refresh, every source-down case |
-| `test_holdings_api.py` | 44 | Add/edit/delete holdings, every validation message |
+| `test_holdings_api.py` | 43 | Add/edit/delete holdings, every validation message |
 | `test_portfolio.py` | 28 | Value, gain, totals, price fallbacks, ordering, never calls Screener |
-| `test_flags.py` | 33 | The four "Look at this" rules, boundaries, the outage guard |
-| `test_refresh.py` | 17 | Refresh all: partial failure, keep-old-report, new flags, one-at-a-time lock |
-| `test_market_sources.py` | 27 | ET and Business Standard feeds on real samples, merge, indices, IST clock |
-| `test_market_ai.py` | 28 | Market writer: every rejection, 3-point cap, partial results |
-| `test_matching.py` | 49 | Your-stocks-in-the-news: 16 true matches, 15 look-alikes that must not match |
-| `test_market_endpoint.py` | 23 | `/api/market/today` contract, caching, every degradation case |
+| `test_flags.py`, `test_craft_report.py` | 38 | The four "Look at this" rules, boundaries, the outage guard, the test helper |
+| `test_refresh.py` | 28 | Refresh all and refresh one: partial failure, keep-old-report, new flags, per-user locks |
+| `test_market_sources.py`, `test_market_ai.py`, `test_matching.py`, `test_market_endpoint.py` | 127 | Feeds on real samples, the market writer, name matching (true matches and look-alikes), caching and every degradation |
+| `test_store.py`, `test_store_contract.py`, `test_store_supabase.py` | 81 | One contract that the in-memory store **and** the real Supabase client (over a fake server) must both pass, row-level security between two users, error handling, **no secret key anywhere in the repo** |
+| `test_auth_provider.py`, `test_auth_routes.py` | 84 | Sign-in, token checks, safe renewal under simultaneous requests, logout of one device, lockout, cookie flags, CSRF, every data route closed without a session, no token in any log |
+| `test_deploy_files.py`, `test_frontend_structure.py` | 51 | Strict security headers, the Docker image, pinned dependencies, phone metadata, accessibility structure, no raw colours, no tokens in browser storage |
 
 ---
 
@@ -190,7 +206,7 @@ and recommend must never appear. If the AI is off or rejected, `ai_text` is `fal
 summary isn't available right now"; the facts and label are unaffected.
 
 ### 2.8 Search and report pages (browser)
-Open <http://127.0.0.1:8000>.
+Open <http://127.0.0.1:8000> and sign in first (section 0.1).
 
 | # | Do | Expect |
 |---|---|---|
@@ -282,17 +298,19 @@ A stock is flagged when any one is true. The flag explains **why**, never what t
 | Price drop | price is ≥ 20% below buy price (owned stocks only) | `Price is 29% below what you paid` | Add a stock with a buy price at least 25% above today's price (the ABB example above) |
 | Serious news | latest report has a serious headline the previous report didn't, and the previous news source worked | `New serious news since the last refresh` | recipe B below |
 
-**Recipes A and B** (they need two stored reports, which only exist after two refreshes, so we fake the change). The
-helper refuses to run unless `DB_PATH` is set, so it can only touch your throwaway database. Run it in the
-second window, in the same session where `$env:DB_PATH` is set (see 0.1):
+**Recipes A and B** (they need two stored reports, which only exist after two refreshes, so we fake the change).
+`scripts/craft_report.py` signs in as a **test** Supabase account (see 0.2; the fake server of 0.1 lives in another
+process, so it can't be used for this) and adds an invented report copy to that account's history. First add TITAN and ABB
+in My stocks as that account, then:
 ```powershell
-venv\Scripts\python.exe scripts\craft_report.py show           TITAN   # list stored reports
-venv\Scripts\python.exe scripts\craft_report.py label-worse    TITAN   # recipe A
-venv\Scripts\python.exe scripts\craft_report.py serious-news   ABB     # recipe B
-Api GET "/api/holdings"                                                # look at each flag.reasons
+venv\Scripts\python.exe scripts\craft_report.py show           TITAN --email test@example.com   # list stored reports
+venv\Scripts\python.exe scripts\craft_report.py label-worse    TITAN --email test@example.com   # recipe A
+venv\Scripts\python.exe scripts\craft_report.py serious-news   ABB   --email test@example.com   # recipe B
 ```
+(You are asked for the password at a hidden prompt.) Reload My stocks and read each flag.
 **Expect after A:** TITAN's flag lists two reasons: `Label is Be careful; Label went from Looks solid to Be careful`.
-**Expect after B:** ABB's flag has `New serious news since the last refresh`.
+**Expect after B:** ABB's flag has `New serious news since the last refresh`. The same two rules are covered
+exhaustively by `test_flags.py` and `test_craft_report.py`, so this is only for seeing them yourself.
 
 **Boundaries and guards (automated, `test_flags.py`):** exactly 20.00% below fires, 19.99% does not; with only one
 report the label and news rules never fire (no false flags on first load); a label that drops *because a question
@@ -300,8 +318,11 @@ went grey* (for example the AI was down) is **not** flagged; reports saved befor
 Also check that none of the four texts contains the word *buy*, *sell*, *target* or *recommend*.
 
 ### 3.6 Refresh all
+The page refreshes **one stock per request** (so no request runs long) and shows "Refreshing 3 of 10". The single-request
+version is still there for scripts:
 ```powershell
 Api POST "/api/refresh-all"
+Api POST "/api/holdings/ABB/refresh"     # one stock: {"symbol":"ABB","refreshed":true,"failed":null,"new_flag":false}
 ```
 **Expect:** about 5 to 10 s per stock, then `HTTP 200 {"refreshed":["ABB","TITAN"],"failed":[],"new_flags":[]}`.
 - `refreshed`: every stock that was rebuilt. `failed`: stocks that couldn't be, each with a plain reason.
@@ -423,19 +444,20 @@ Open <http://127.0.0.1:8000/market.html>.
 Each page must still open when something fails. Only the dependent part may go grey.
 
 ### 5.1 All outside sources down
-Start a **separate** server on another port whose outgoing connections go to a dead proxy (this was verified):
+Start the fake-login server (0.1) with outgoing connections pointed at a dead proxy. The fake Supabase is inside the
+process, so signing in and saving still work while every data source fails (this was verified for the sources):
 ```powershell
+$env:ALLOW_FAKE_SUPABASE = "1"
 $env:HTTPS_PROXY = "http://127.0.0.1:9"; $env:HTTP_PROXY = "http://127.0.0.1:9"; $env:NO_PROXY = "127.0.0.1,localhost"
-venv\Scripts\python.exe -m uvicorn backend.app.main:app --port 8001
+venv\Scripts\python.exe scripts\dev_fake_server.py 8001
 ```
-In another window (variables cleared, helper pointing at 8001: `$Base = "http://127.0.0.1:8001"`):
+In another window (variables cleared; `$Base = "http://127.0.0.1:8001"`, then `Login ...`):
 ```powershell
 Api GET "/api/market/today?refresh=true"
 ```
-**Expect:** `HTTP 200`, `indices: []`, `headlines: []`, `points: []`, `ai_text: false`, and all three sources
-`"ok": false` (about 3 s). Reports for an already-cached stock still open; a new stock needs the NSE list, so run
-this against a database that already has companies (any database that has handled a search).
-Stop the server and close that window afterwards so the proxy variables don't linger.
+**Expect:** `HTTP 200`, `indices: []`, `headlines: []`, `points: []`, `ai_text: false`, and all three sources `"ok": false`
+(about 3 s). In the browser the report page still opens, with grey rows and a sources footer naming what failed; the
+company list falls back to the bundled snapshot, so search still works. Close both windows afterwards.
 
 ### 5.2 AI off
 Leave `LABELLER_MODEL` and `WRITER_MODEL` empty in `.env` (edit it yourself; the assistant never reads it) and
@@ -488,7 +510,141 @@ From `Documents/Architecture/V0_Phase2_Phase3_Spec.md`. **Auto** rows are covere
 
 ---
 
-## 7. Troubleshooting
+
+### V1 platform (from `Documents/Architecture/V1_Platform_Spec.md`)
+| Criterion | Where | Type |
+|---|---|---|
+| 1.1 The existing tests pass on the in-memory store; one contract suite runs on both stores | `test_store_contract.py`; with the `TEST_SUPABASE_*` variables it also runs against real Supabase | Auto (real Supabase: **You**) |
+| 1.2 Row-level security: nobody sees or changes another account's rows; nothing readable without a login | `test_store_contract.py` (fake server for offline, **real project** for proof) | Auto + **You** (run against a test project) |
+| 1.3 No secret / service-role key anywhere in the repo | `test_store_supabase.py` | Auto |
+| 1.4 Copied data gives identical totals | `scripts/copy_sqlite_to_supabase.py` is **not built** (the local database has no data worth moving, per your choice to start fresh; say if you want it) | n/a |
+| 1.5 Database unreachable shows the plain 503 message | `test_auth_routes.py` | Auto |
+| 2.1 Every route except `/api/health` and login returns 401 without a cookie | `test_auth_routes.py::test_every_data_route_is_closed_without_a_session` | Auto |
+| 2.2 Same message for wrong password and unknown email; tokens never in logs or responses; cookie flags | `test_auth_routes.py` | Auto |
+| 2.3 Logout ends only that device; a request from another site is refused | `test_auth_routes.py`, 7.1 | Auto |
+| 2.4 Two simultaneous requests at token expiry both succeed | `test_auth_routes.py`, `test_auth_provider.py` | Auto |
+| 3.1 Vercel preview and production complete a report, a refresh and the market page | 7.6 | **You** |
+| 3.2 Works on a real iPhone and Android, also after closing and reopening | 7.3, 7.6 | **You** |
+| 3.3 README lists the accepted limits and costs | `Deploy_Guide.md` ("Costs and limits") | Auto (doc) |
+| 4.1 Every operation over 0.3 s shows a loader; Refresh all shows "N of M"; reduced motion | `run_browser_checks.py loaders`, 7.2 | Auto + **You** (Slow 4G) |
+| 5.1 No sideways scroll at 320–768 px; inputs 16 px; tap targets 44 px | `run_browser_checks.py mobile`, 7.3 | Auto + **You** (real phone) |
+| 5.2 Lighthouse mobile scores; Add to Home Screen | **not measured by me**: run Lighthouse in Chrome on the deployed site; 7.3 step 9 | **You** |
+| 6.1 axe-core: zero serious or critical issues | `run_browser_checks.py axe` | Auto |
+| 6.2 Keyboard-only run, visible focus, no traps | `run_browser_checks.py a11y`, 7.4 | Auto + **You** |
+| 6.3 Back link and browser Back from all three entry points | `run_browser_checks.py a11y`, 7.5 | Auto + **You** |
+| 6.4 NVDA and VoiceOver announce titles, loaders, errors, the card layout | 7.4 steps 7 to 10 | **You** (listen) |
+
+---
+
+## 7. Platform walkthroughs: sign-in, loaders, phone, keyboard, Back, deployment
+
+Do these in a browser, the way a person would. Use the fake server (0.1) unless a row says otherwise.
+
+### 7.1 Signing in and out
+| # | Do | Expect |
+|---|---|---|
+| 1 | Open <http://127.0.0.1:8000> in a fresh private window | You are sent to the **Sign in** page; there is no menu |
+| 2 | Open `/holdings.html` directly | Sign in page; the address ends with `?next=%2Fholdings.html` |
+| 3 | Press Sign in with both fields empty | "Enter your email and password."; the cursor is in the first empty field |
+| 4 | Email filled, password empty, Sign in | The same message; the cursor is in the password field |
+| 5 | Enter the wrong password | "Wrong email or password."; the password box is emptied; the button is back to "Sign in" |
+| 6 | Use an email nobody has, any password | The very same message (it never says which part was wrong) |
+| 7 | Click **Show**, then **Hide** | The password becomes visible, then hidden again |
+| 8 | Enter the right details | You land on **My stocks** (where you were going); your email and **Log out** are top right |
+| 9 | Reload the page, or close the tab and reopen the site | Still signed in |
+| 10 | Open `/login.html` while signed in | Straight to the page you were heading for |
+| 11 | Open `/login.html?next=https://evil.example` while signed in | Goes to the home page, never to another site |
+| 12 | Get the password wrong 5 times in a row, then use the right one | "Too many attempts. Try again in a few minutes." even for the right password |
+| 13 | Press **Log out** | You see "Logging out…", then the Sign in page |
+| 14 | Press the browser Back button, then reload | Sign in page again (nothing of your data is shown) |
+| 15 | Sign in as `partner@example.com`, add a stock; log out; sign in as `dev@example.com` | Each person sees only their own stocks |
+| 16 | Browser developer tools > Application | Cookies `sb-access` and `sb-refresh` are marked **HttpOnly**; Local storage and Session storage are empty |
+
+### 7.2 Loaders (something slow always shows a spinner and words)
+In the browser's developer tools open **Network** and set throttling to **Slow 4G** (or use a real slow connection).
+| # | Do | Expect |
+|---|---|---|
+| 1 | Press Sign in | The button turns into a spinner and "Signing in…" and can't be pressed twice |
+| 2 | Open Search; watch "Stocks you looked at" | A spinner and "Loading your stocks…", then the list |
+| 3 | Type `abb` | A small spinner inside the box and "Searching…" until the suggestions appear |
+| 4 | Open a report you haven't opened today | A heading "Report for ABB", a spinner with "Getting the report. A new one can take up to a minute.", grey placeholders. After 8 s the words change to "This is taking longer than usual. Still working…" and a seconds counter appears |
+| 5 | My stocks > Add a stock > Save | The Save button shows a spinner and "Saving…" |
+| 6 | My stocks > **Refresh all** | A spinner and "Refreshing 1 of N: ABB. This takes about 5 seconds per stock." counting up; the buttons are disabled meanwhile; a summary at the end |
+| 7 | Remove a stock | "Removing …" with a spinner, then "Removed …" |
+| 8 | Market today | A heading, a spinner with "Getting today's market…", then the page |
+| 9 | Turn your device's **Reduce motion** setting on, repeat step 8 | The spinner does not spin, but the words are still there |
+| 10 | Developer tools > Network > **Offline** | A banner "You're offline. Some things won't work until you reconnect."; a search says "You're offline. Reconnect and try again." |
+| 11 | Back online | The banner disappears |
+
+### 7.3 On a phone (or developer tools > device mode: iPhone 12, Pixel 7, and a 320-wide window)
+| # | Do | Expect |
+|---|---|---|
+| 1 | Open every page | No sideways scrolling anywhere; nothing is cut off at the right edge |
+| 2 | Look at the bottom of the screen | Three tabs with icons: **Search**, **My stocks**, **Market today**; the current one has a line above it |
+| 3 | Tap each tab | It goes there; the tab bar stays reachable with your thumb and clears the phone's bottom edge |
+| 4 | Tap into the email or search box on an iPhone | The page does **not** zoom in |
+| 5 | My stocks | Each stock is a card; every line has its label ("Shares and buy price", "Value today" …) |
+| 6 | Tap **Add a stock** | A sheet slides up from the bottom, full width, with big fields and buttons |
+| 7 | Tap the small `F1` style source chips in a report | They open the source easily (the tap area is bigger than the chip) |
+| 8 | Rotate the phone | Layout adapts, nothing breaks |
+| 9 | Phone browser menu > **Add to Home Screen** | The app gets the "SA" icon and opens full-screen without browser bars |
+| 10 | Close the app and reopen it | Still signed in |
+
+### 7.4 With the keyboard only (put the mouse away) and a screen reader
+| # | Do | Expect |
+|---|---|---|
+| 1 | Load any page and press **Tab** once | A "Skip to main content" button appears at the top left |
+| 2 | Press **Enter** on it | The menu is skipped and you are at the page content |
+| 3 | Keep pressing Tab | Every link, button and field is reached in a sensible order, each with a clear focus ring; you never get stuck |
+| 4 | Sign in, search `abb`, use **↓** and **Enter** | You reach the report without the mouse |
+| 5 | In the Add dialog press **Esc** | It closes and the cursor returns to the button you used |
+| 6 | Leave the shares field as `0` and press Save | The error is read out, and **only** the shares field is marked invalid and focused |
+| 7 | (NVDA on Windows, or VoiceOver on iPhone) open My stocks | You hear "Your stocks are ready. N stocks." The list is announced as a table with rows and labelled cells |
+| 8 | Press the heading key (H) on a report | Headings read in order: the company, then each section |
+| 9 | Move to an external link, such as a source | You hear that it opens in a new tab |
+| 10 | Press Refresh on a report | You hear the loader's words; at the end focus is on the report's heading |
+
+### 7.5 Going from page to page and back
+| # | Do | Expect |
+|---|---|---|
+| 1 | Search > type `abb` > open the report | The report has a **← Back to Search** link at the top |
+| 2 | Click that link (or the browser Back button) | You are back on Search with `abb` still typed and the suggestions showing; the address says `?q=abb` |
+| 3 | My stocks > click a stock's name | The report says **Back to My stocks**, and the menu highlights **My stocks**, not Search |
+| 4 | Click Back | My stocks, as you left it |
+| 5 | Market today > click a stock under "Your stocks in the news" | **Back to Market today**; Back returns there |
+| 6 | Open a report address directly | **Back to Search** |
+| 7 | Browser Back and Forward across a few pages | Each page comes back quickly and correctly |
+| 8 | Signed out, open `/report.html?symbol=ABB`, sign in | You land on that report |
+
+### 7.6 The deployed site
+Follow the first-run checklist in `Documents/Deployment/Deploy_Guide.md` (Part D), then repeat 7.1 to 7.5 on the Vercel
+address, on a **real iPhone and a real Android phone**. Also confirm: the cookies exist after signing in (developer tools
+> Application > Cookies shows `__Host-sb-access`), and saving a stock works (if you see "That request wasn't allowed from
+this site.", add the Vercel address to `ALLOWED_ORIGINS` in Railway).
+
+### 7.7 The automated browser checks
+Everything in 7.1 to 7.5 that can be checked by a script is checked by the browser suite, which starts a fresh fake
+server for each check:
+```powershell
+venv\Scripts\python.exe -m pip install -r requirements-dev.txt
+venv\Scripts\python.exe -m playwright install chromium         # once
+venv\Scripts\python.exe scripts\run_browser_checks.py           # all six, about 10 to 15 minutes (real data sources)
+venv\Scripts\python.exe scripts\run_browser_checks.py mobile a11y   # just some
+```
+| Check | What it covers |
+|---|---|
+| `login` | Sign-in, the guard on every page, Log out, return-to-page, open-redirect protection, HttpOnly cookies, nothing in browser storage, two accounts kept apart |
+| `loaders` | A spinner and words for every slow operation (responses are deliberately delayed), the 8-second message, offline banner, reduced motion |
+| `mobile` | 320, 375, 390, 412 and 768 px on every page and dialog: no sideways scroll, inputs 16 px, tap targets 44 px, bottom tab bar, bottom-sheet dialogs |
+| `a11y` | Skip link, keyboard-only sign-in, a visible focus ring on every stop, no keyboard trap, Back from all three entry points, announcements and focus, form errors, phone card semantics |
+| `axe` | The axe-core scanner on every page and state at desktop and phone size: fails on any serious or critical finding (currently zero findings of any level) |
+| `csp` | The exact Content-Security-Policy from `frontend/vercel.json`: zero violations on every page, fonts still load, an injected script and an outside frame are blocked |
+
+Screenshots go to `scripts/browser/output/` (not tracked by git). Exit code 1 if anything fails.
+
+---
+
+## 8. Troubleshooting
 
 | Symptom | Likely cause and fix |
 |---|---|
@@ -496,8 +652,10 @@ From `Documents/Architecture/V0_Phase2_Phase3_Spec.md`. **Auto** rows are covere
 | News row grey, "Couldn't fetch this right now" | Google News rate limit (429) or no internet; wait and refresh |
 | `₹` shows as `â¹` in PowerShell | Use the helper in 0.2, or run `[Console]::OutputEncoding = [Text.Encoding]::UTF8` |
 | `Api` prints `HTTP 400` with nothing after it | You pasted an older helper; use the one in 0.2 (it reads `$_.ErrorDetails.Message`) |
-| `Address already in use` | Another server is on that port: use `--port 8002`, or stop the old one |
-| `scripts\craft_report.py` says DB_PATH is not set | Set `$env:DB_PATH` to the same throwaway file in that window (0.1). This is deliberate protection |
+| `Address already in use` | Another server is on that port: use another one (for example `8002`), or stop the old one |
+| `Api` prints `HTTP 401 ... Please sign in.` | You haven't run `Login` in this window, or you logged out |
+| `craft_report.py` says "Set SUPABASE_URL …" | It signs in to a real **test** account (0.2); it can't use the fake server |
+| The browser checks say `Executable doesn't exist` | Run `python -m playwright install chromium` once, or set `CHROME_PATH` |
 | Totals say "isn't included" | That stock's price couldn't be fetched (Yahoo down and no price in its report). Refresh all, then reload |
 | Search says "Couldn't fetch the NSE company list" | First run with no internet and an empty database; connect and retry |
 | Tests fail only on your machine | Run `venv\Scripts\python.exe -m pip install -r requirements.txt` then `pytest` again |
