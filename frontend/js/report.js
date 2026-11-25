@@ -1,6 +1,7 @@
 import { getReport } from "./api.js";
 import { initCombobox } from "./combobox.js";
 import { labelPill, statusPill } from "./labels.js";
+import { arrowIcon, el, externalLink } from "./ui.js";
 
 initCombobox({
   form: document.getElementById("search-form"),
@@ -13,33 +14,6 @@ const root = document.getElementById("report");
 const symbol = (new URLSearchParams(location.search).get("symbol") || "").trim().toUpperCase();
 
 // ---------------------------------------------------------------- small DOM helpers
-function el(tag, className, text) {
-  const node = document.createElement(tag);
-  if (className) node.className = className;
-  if (text !== undefined) node.textContent = text;
-  return node;
-}
-
-// Links in reports come from scraped pages and RSS feeds, so only http(s) is ever allowed.
-function safeUrl(url) {
-  try {
-    const u = new URL(url);
-    return u.protocol === "https:" || u.protocol === "http:" ? u.href : null;
-  } catch {
-    return null;
-  }
-}
-
-function externalLink(url, text, className) {
-  const href = safeUrl(url);
-  if (!href) return el("span", className, text);
-  const a = el("a", className, text);
-  a.href = href;
-  a.target = "_blank";
-  a.rel = "noopener noreferrer";
-  return a;
-}
-
 function chip(id, report) {
   const fact = report.facts.find((f) => f.id === id);
   const item = report.news.find((n) => n.id === id);
@@ -60,11 +34,6 @@ function citedText(text, report) {
   return frag;
 }
 
-const ARROWS = {
-  up: '<path d="M5 1l4 6H1z" fill="currentColor"/>',
-  down: '<path d="M5 9L1 3h8z" fill="currentColor"/>',
-  flat: '<path d="M1 5h8" stroke="currentColor" stroke-width="2"/>',
-};
 
 // ---------------------------------------------------------------- sections
 function renderHeader(r) {
@@ -78,11 +47,7 @@ function renderHeader(r) {
   price.append(el("div", "price-main", r.price.display));
   const dir = r.price.direction || "flat";
   const change = el("div", `price-change ${dir}`);
-  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  svg.setAttribute("viewBox", "0 0 10 10");
-  svg.setAttribute("aria-hidden", "true");
-  svg.innerHTML = ARROWS[dir] || ARROWS.flat;
-  change.append(svg, r.price.change_display ? `${r.price.change_display} today` : "Today's change unavailable");
+  change.append(arrowIcon(dir), r.price.change_display ? `${r.price.change_display} today` : "Today's change unavailable");
   price.append(change, el("div", "asof", r.price.as_of ? `as of ${r.price.as_of}` : ""));
   head.append(left, price);
   return head;

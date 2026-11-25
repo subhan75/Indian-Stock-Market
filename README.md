@@ -1,4 +1,4 @@
-# Stock Analyst (India) — v0, Phase 1: Stock report
+# Stock Analyst (India) — v0
 
 Type an NSE stock and get a plain-words report: five traffic-light questions, an overall label
 (Looks solid / Mixed / Be careful), what the company does, recent news, and a source link for every
@@ -29,6 +29,21 @@ venv\Scripts\python.exe -m pytest backend/tests
 ```
 
 All network access and the AI are faked in tests; Screener pages are trimmed real fixtures.
+
+## My stocks (Phase 2)
+
+Open `/holdings.html`. Add what you own (shares and average buy price) or just watch a stock. Each row shows
+today's value, gain or loss, the stock's label and a **Look at this** tag when one of these is true:
+the label is Be careful, the label got worse since the previous report, the price is 20% or more below what
+you paid, or new serious news appeared since the previous report. The tag says *why*, never what to do.
+
+- **Refresh all** rebuilds every report one at a time (about 5 seconds each). If Screener.in can't be reached
+  for a stock, its earlier report is kept and it is listed as failed.
+- Opening the page never calls Screener; it uses cached reports and fetches only live prices.
+- Totals leave out any stock whose price couldn't be fetched and say so.
+- Contracts, rules and exit criteria: [Documents/Architecture/V0_Phase2_Phase3_Spec.md](Documents/Architecture/V0_Phase2_Phase3_Spec.md).
+- AI problems are logged by the server (with API-key fragments removed), so a silent "summary isn't available"
+  can be diagnosed from the terminal running uvicorn.
 
 ## Tuning
 

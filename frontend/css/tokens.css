@@ -13,6 +13,7 @@
   --cite-bg: #e8eefc;
   --cite-bg-hover: #d6e1fa;
   --skeleton-hi: #f3f3ef;
+  --backdrop: rgb(20 20 26 / .45);
 
   /* Status colours. Always paired with an icon and a text label, never colour alone. */
   --green: #17653a;   --green-bg: #e3f3e9;

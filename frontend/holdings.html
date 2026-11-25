@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>My stocks | Stock Analyst</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%2314141a%27/%3E%3Ctext x=%2716%27 y=%2721%27 font-family=%27sans-serif%27 font-size=%2713%27 font-weight=%27700%27 fill=%27white%27 text-anchor=%27middle%27%3ESA%3C/text%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/app.css">
+  <link rel="stylesheet" href="/css/holdings.css">
+</head>
+<body>
+  <div class="wrap wide">
+    <header class="topbar">
+      <a class="brand" href="/"><span class="brand-mark" aria-hidden="true">SA</span> Stock Analyst</a>
+    </header>
+    <nav class="nav" aria-label="Main">
+      <a href="/">Search</a>
+      <a href="/holdings.html">My stocks</a>
+    </nav>
+
+    <main>
+      <div class="page-head">
+        <div>
+          <h1>My stocks</h1>
+          <p class="lead">Everything you own in one list, each with its report. A "Look at this" tag says why a stock deserves a closer look, never what to do.</p>
+        </div>
+        <div class="actions">
+          <button id="add-btn" class="btn" type="button">Add a stock</button>
+          <button id="refresh-btn" class="btn-secondary" type="button">Refresh all</button>
+        </div>
+      </div>
+
+      <div id="status" class="status" role="status" aria-live="polite"></div>
+
+      <section id="totals" class="totals" aria-label="Totals" hidden></section>
+      <div id="content" aria-busy="true"></div>
+    </main>
+
+    <footer class="site-foot">Research aid, not financial advice.</footer>
+  </div>
+
+  <dialog id="stock-dialog" aria-labelledby="dialog-title">
+    <form id="stock-form" novalidate>
+      <h2 id="dialog-title">Add a stock</h2>
+
+      <div class="field">
+        <label for="stock-input">Stock</label>
+        <div class="combo">
+          <input id="stock-input" type="text" role="combobox" aria-expanded="false" aria-controls="stock-suggestions"
+                 aria-autocomplete="list" autocomplete="off" spellcheck="false" autocapitalize="off" maxlength="80"
+                 placeholder="Company name or NSE symbol">
+          <ul id="stock-suggestions" class="suggestions" role="listbox" aria-label="Matching stocks" hidden></ul>
+        </div>
+        <p id="stock-hint" class="field-help" role="status" aria-live="polite">Search, then pick a stock from the list.</p>
+      </div>
+
+      <div class="field check">
+        <input id="watching" type="checkbox">
+        <label for="watching">I don't own it, I just want to watch it</label>
+      </div>
+
+      <div id="own-fields">
+        <div class="field">
+          <label for="shares">Number of shares</label>
+          <input id="shares" type="number" inputmode="numeric" min="1" step="1" placeholder="e.g. 50">
+        </div>
+        <div class="field">
+          <label for="buy-price">Average buy price (₹ per share)</label>
+          <input id="buy-price" type="number" inputmode="decimal" min="0" step="0.01" placeholder="e.g. 720.50">
+        </div>
+      </div>
+
+      <p id="form-error" class="form-error" role="alert" hidden></p>
+      <p id="form-note" class="field-help" hidden>Saving builds the stock's first report, which can take a few seconds.</p>
+
+      <div class="dialog-actions">
+        <button id="cancel-btn" class="btn-secondary" type="button">Cancel</button>
+        <button id="save-btn" class="btn" type="submit">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="confirm-dialog" aria-labelledby="confirm-text">
+    <p id="confirm-text"></p>
+    <div class="dialog-actions">
+      <button id="confirm-no" class="btn-secondary" type="button">Cancel</button>
+      <button id="confirm-yes" class="btn" type="button">Confirm</button>
+    </div>
+  </dialog>
+
+  <script type="module" src="/js/nav.js"></script>
+  <script type="module" src="/js/holdings.js"></script>
+</body>
+</html>

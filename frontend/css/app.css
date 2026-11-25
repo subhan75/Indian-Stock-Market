@@ -27,6 +27,12 @@ button, [role="option"], a { cursor: pointer; }
   background: var(--primary); color: var(--on-primary); font-size: 11px; font-weight: 700; letter-spacing: .02em;
 }
 
+/* Shared nav */
+.nav { display: flex; gap: var(--space-1); margin-bottom: var(--space-2); border-bottom: 1px solid var(--line); }
+.nav a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 var(--space-3); color: var(--ink-2); text-decoration: none; font-size: 14px; font-weight: 500; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.nav a:hover { color: var(--ink); }
+.nav a[aria-current="page"] { color: var(--ink); font-weight: 600; border-bottom-color: var(--ink); }
+
 /* Hero */
 .hero { padding: var(--space-7) 0 var(--space-5); }
 .hero h1 { margin: 0 0 var(--space-3); font-size: clamp(30px, 6vw, 40px); line-height: 1.15; letter-spacing: -0.02em; }
