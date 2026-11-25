@@ -33,3 +33,25 @@ def crore(n: float) -> str:
 def pct(n: float, decimals: int = 1, signed: bool = False) -> str:
     sign = "+" if signed and n > 0 else ""
     return f"{sign}{n:.{decimals}f}%"
+
+
+def rupees_auto(n: float) -> str:
+    """A price: whole rupees when it is whole, otherwise 2 decimals (₹7,028 or ₹7,028.50)."""
+    return rupees(n, 0 if float(n).is_integer() else 2)
+
+
+def percent_direction(percent: float) -> str:
+    """'flat' when the percentage rounds to 0.0 (spec: Holdings field rules)."""
+    rounded = round(percent, 1)
+    return "flat" if rounded == 0 else "up" if rounded > 0 else "down"
+
+
+def signed_rupees(gain: float, percent: float) -> str:
+    """'+₹66,300 (+15.8%)', '-₹5,000 (-3.2%)', and '₹0 (0.0%)' when both round to zero."""
+    whole = int(round(abs(gain)))
+    pct = round(percent, 1)
+    if whole == 0 and pct == 0:
+        return "₹0 (0.0%)"
+    sign = "+" if gain > 0 else "-" if gain < 0 else ""
+    pct_text = "0.0%" if pct == 0 else f"{pct:+.1f}%"
+    return f"{sign}{rupees(whole)} ({pct_text})"

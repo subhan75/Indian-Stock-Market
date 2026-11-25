@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from typing import Callable
 
-from ..format import rupees
+from ..format import rupees_auto
 
 IST = timezone(timedelta(hours=5, minutes=30))
 YF_TIMEOUT_SECONDS = 15
@@ -63,7 +63,7 @@ def price_block(result: PriceResult) -> dict:
         return {"display": "Price unavailable", "change_display": "", "direction": "flat",
                 "as_of": format_time(result.fetched_at) if result.fetched_at else "", "value": None}
     price = result.price
-    display = rupees(price, 0 if float(price).is_integer() else 2)
+    display = rupees_auto(price)
     if result.change_pct is None:
         change, direction = "", "flat"
     else:

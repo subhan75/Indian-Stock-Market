@@ -2,7 +2,7 @@ from typing import Any
 
 from fastapi import APIRouter, Body, Query
 
-from . import holdings, report
+from . import holdings, portfolio, report
 from .db import connect
 from .errors import ApiError
 from .sources import nse
@@ -36,6 +36,11 @@ def recent_reports(limit: int = Query(10, ge=1, le=50)):
             (limit,),
         ).fetchall()
     return [dict(r) for r in rows]
+
+
+@router.get("/holdings")
+def list_holdings():
+    return portfolio.build()
 
 
 @router.post("/holdings", status_code=201)
