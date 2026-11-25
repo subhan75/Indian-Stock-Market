@@ -42,6 +42,7 @@
 .q-row { display: grid; grid-template-columns: 84px 1fr; gap: var(--space-4); padding: var(--space-4) 0; border-top: 1px solid var(--line); }
 .q-row:first-child { border-top: 0; padding-top: 0; }
 .q-row:last-child { padding-bottom: 0; }
+.q-row > .pill { align-self: start; justify-self: start; }
 .q-title { margin: 0 0 2px; font-size: 15px; font-weight: 600; }
 .q-value { margin: 0 0 2px; font-size: 15px; }
 .q-meaning { margin: 0; font-size: 13px; color: var(--ink-3); }
