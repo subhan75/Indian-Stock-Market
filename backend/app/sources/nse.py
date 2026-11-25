@@ -7,6 +7,7 @@ import requests
 
 from ..config import COMPANY_LIST_TTL_DAYS
 from ..db import connect
+from .base import SourceUnavailable  # noqa: F401  (re-exported for callers)
 
 NSE_EQUITY_URL = "https://archives.nseindia.com/content/equities/EQUITY_L.csv"
 KEEP_SERIES = {"EQ", "BE"}
@@ -14,10 +15,6 @@ HEADERS = {
     "User-Agent": "Mozilla/5.0 (compatible; StockAnalystV0/0.1; personal research tool)",
     "Accept": "text/csv,*/*",
 }
-
-
-class SourceUnavailable(Exception):
-    pass
 
 
 def parse_equity_csv(text: str) -> list[dict]:

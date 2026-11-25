@@ -15,6 +15,7 @@ LABELLER_MODEL = os.getenv("LABELLER_MODEL", "")
 WRITER_MODEL = os.getenv("WRITER_MODEL", "")
 
 CACHE_TTL_HOURS = 24
+SCREENER_MIN_GAP_SECONDS = 3   # be polite: wait between Screener requests
 COMPANY_LIST_TTL_DAYS = 7
 
 # Question cut-offs (v0 doc, "The five questions")
