@@ -187,12 +187,3 @@ def test_delete_removes_the_row_but_keeps_reports(client):
     err(client.delete("/api/holdings/ABB"), 404, "not_found", "ABB isn't in your stocks.")
     from backend.app import holdings
     assert holdings.get_holding("ABB") is None
-
-
-def test_database_rejects_a_holding_without_shares_even_if_code_is_bypassed():
-    import sqlite3
-    from backend.app.db import connect
-
-    with connect() as conn:
-        with pytest.raises(sqlite3.IntegrityError):
-            conn.execute("INSERT INTO holdings (symbol, shares, buy_price, watching, added_at) VALUES ('X', NULL, NULL, 0, 'now')")

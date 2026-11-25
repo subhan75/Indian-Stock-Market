@@ -5,8 +5,7 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from backend.app import ai, config, report
-from backend.app.db import connect
+from backend.app import ai, config, report, store
 from backend.app.main import app
 from backend.app.sources import news as news_src
 from backend.app.sources import nse, prices
@@ -245,10 +244,9 @@ def test_get_report_saves_then_serves_from_cache_until_refresh():
     assert r1 == r2 and calls == ["ABB"]
     report.get_report("ABB", refresh=True, deps=deps)
     assert calls == ["ABB", "ABB"]
-    with connect() as conn:
-        # a refresh inside the same second replaces the row (generated_at is part of the key)
-        assert conn.execute("SELECT COUNT(*) FROM reports").fetchone()[0] >= 1
-        assert conn.execute("SELECT label FROM reports LIMIT 1").fetchone()[0] == "looks_solid"
+    # a refresh inside the same second replaces the stored report (generated_at is part of its key)
+    assert len(store.current().reports_recent("ABB", 10)) >= 1
+    assert store.current().reports_latest_by_symbol(5)[0]["label"] == "looks_solid"
     assert report.latest_report("ABB")["symbol"] == "ABB"
 
 

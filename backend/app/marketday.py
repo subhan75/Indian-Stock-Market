@@ -4,15 +4,13 @@ The market part (indices, headlines, AI points) is cached for MARKET_CACHE_MINUT
 the AI call. Your stocks and Watching are recomputed on every request. Nothing here raises: a failing source
 greys out its own block only.
 """
-import json
 import logging
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from typing import Callable
 
-from . import ai, config, holdings, report
-from .db import connect
+from . import ai, config, holdings, memcache, report
 from .matching import find_stock_news
 from .sources import market as src
 from .sources import news
@@ -32,23 +30,12 @@ class MarketDeps:
 
 # ----------------------------------------------------------------------------- cache
 def _read_cache() -> tuple[dict, datetime] | None:
-    with connect() as conn:
-        row = conn.execute("SELECT body, fetched_at FROM page_cache WHERE url = ?", (CACHE_KEY,)).fetchone()
-    if not row:
-        return None
-    try:
-        return json.loads(row["body"]), datetime.fromisoformat(row["fetched_at"])
-    except (ValueError, TypeError):
-        return None
+    entry = memcache.market.get(CACHE_KEY)
+    return (entry[0], entry[1]) if entry else None
 
 
 def _write_cache(part: dict, when: datetime) -> None:
-    with connect() as conn:
-        conn.execute(
-            "INSERT INTO page_cache (url, body, fetched_at) VALUES (?,?,?) "
-            "ON CONFLICT(url) DO UPDATE SET body=excluded.body, fetched_at=excluded.fetched_at",
-            (CACHE_KEY, json.dumps(part, ensure_ascii=False), when.isoformat()),
-        )
+    memcache.market.put(CACHE_KEY, (part, when))
 
 
 def _fresh_cache(now: datetime) -> dict | None:

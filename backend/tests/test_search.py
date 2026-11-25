@@ -1,8 +1,6 @@
-import json
-
 from fastapi.testclient import TestClient
 
-from backend.app.db import connect
+from backend.app import store
 from backend.app.main import app
 from backend.app.sources import nse
 
@@ -68,11 +66,8 @@ def test_recent_reports_newest_first_one_per_stock(monkeypatch):
         ("ABB", "2026-11-25T10:00:00+05:30", "looks_solid"),
         ("INFY", "2026-11-22T10:00:00+05:30", "be_careful"),
     ]
-    with connect() as conn:
-        conn.executemany(
-            "INSERT INTO reports (symbol, generated_at, label, report_json) VALUES (?,?,?,?)",
-            [(s, g, l, json.dumps({})) for s, g, l in rows],
-        )
+    for symbol, generated_at, label in rows:
+        store.current().reports_save({"symbol": symbol, "generated_at": generated_at, "label": {"code": label}})
     with TestClient(app) as client:
         data = client.get("/api/reports/recent").json()
     assert [d["symbol"] for d in data] == ["ABB", "INFY"]

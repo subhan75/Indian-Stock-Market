@@ -5,13 +5,12 @@ Validation messages are the exact sentences in the spec's error catalogue.
 import logging
 import math
 import re
-import sqlite3
 from datetime import datetime
 from typing import Any
 
-from . import config, report
-from .db import connect
+from . import config, report, store
 from .errors import ApiError
+from .sources import nse
 from .sources.prices import IST
 
 log = logging.getLogger("stock_analyst.holdings")
@@ -61,24 +60,21 @@ def parse_body(body: Any) -> dict:
 
 
 # ----------------------------------------------------------------------------- storage
-def _saved(row) -> dict:
-    return {"symbol": row["symbol"], "name": row["name"] or row["symbol"], "watching": bool(row["watching"]),
-            "shares": row["shares"], "buy_price": row["buy_price"], "added_at": row["added_at"]}
-
-
-_SELECT = ("SELECT h.symbol, h.shares, h.buy_price, h.watching, h.added_at, c.name AS name "
-           "FROM holdings h LEFT JOIN companies c ON c.symbol = h.symbol")
+def _saved(row: dict) -> dict:
+    company = nse.get_company(row["symbol"])
+    return {"symbol": row["symbol"], "name": company["name"] if company else row["symbol"],
+            "watching": bool(row["watching"]), "shares": row["shares"], "buy_price": row["buy_price"],
+            "added_at": row["added_at"]}
 
 
 def list_holdings() -> list[dict]:
-    with connect() as conn:
-        rows = conn.execute(_SELECT + " ORDER BY h.added_at, h.rowid").fetchall()
-    return [_saved(r) for r in rows]
+    nse.ensure_loaded()                      # names come from the company list
+    return [_saved(r) for r in store.current().holdings_list()]
 
 
 def get_holding(symbol: str) -> dict | None:
-    with connect() as conn:
-        row = conn.execute(_SELECT + " WHERE h.symbol = ?", (symbol,)).fetchone()
+    nse.ensure_loaded()
+    row = store.current().holdings_get(symbol)
     return _saved(row) if row else None
 
 
@@ -93,13 +89,10 @@ def create(body: Any) -> dict:
     if len(list_holdings()) >= config.MAX_HOLDINGS:
         raise _bad(f"You can keep up to {config.MAX_HOLDINGS} stocks in v0.")
     try:
-        with connect() as conn:
-            conn.execute(
-                "INSERT INTO holdings (symbol, shares, buy_price, watching, added_at) VALUES (?,?,?,?,?)",
-                (symbol, data["shares"], data["buy_price"], int(data["watching"]),
-                 datetime.now(IST).isoformat(timespec="seconds")),
-            )
-    except sqlite3.IntegrityError:  # two requests raced
+        store.current().holdings_insert({
+            "symbol": symbol, "shares": data["shares"], "buy_price": data["buy_price"],
+            "watching": data["watching"], "added_at": datetime.now(IST).isoformat(timespec="seconds")})
+    except store.Conflict:  # two requests raced
         raise _bad(f"You already have {symbol}. Edit it instead.")
     return get_holding(symbol)
 
@@ -111,17 +104,13 @@ def update(path_symbol: str, body: Any) -> dict:
     data = parse_body(body)
     if data["symbol"] is not None and data["symbol"] != symbol:
         raise _bad("The symbol in the form doesn't match the stock being edited.")
-    with connect() as conn:
-        conn.execute("UPDATE holdings SET shares = ?, buy_price = ?, watching = ? WHERE symbol = ?",
-                     (data["shares"], data["buy_price"], int(data["watching"]), symbol))
+    store.current().holdings_update(symbol, data["shares"], data["buy_price"], data["watching"])
     return get_holding(symbol)
 
 
 def delete(path_symbol: str) -> dict:
     symbol = clean_symbol(path_symbol)
-    with connect() as conn:
-        removed = conn.execute("DELETE FROM holdings WHERE symbol = ?", (symbol,)).rowcount
-    if not removed:
+    if not store.current().holdings_delete(symbol):
         raise ApiError("not_found", f"{symbol} isn't in your stocks.")
     return {"deleted": True}
 

@@ -2,8 +2,7 @@ from typing import Any
 
 from fastapi import APIRouter, Body, Query
 
-from . import holdings, marketday, portfolio, refresh, report
-from .db import connect
+from . import holdings, marketday, portfolio, refresh, report, store
 from .errors import ApiError
 from .sources import nse
 
@@ -21,21 +20,15 @@ def search_stocks(q: str = Query("", max_length=80)):
 
 @router.get("/reports/recent")
 def recent_reports(limit: int = Query(10, ge=1, le=50)):
-    """Newest report per stock, newest first."""
-    with connect() as conn:
-        rows = conn.execute(
-            """
-            SELECT r.symbol, COALESCE(c.name, r.symbol) AS name, r.label, r.generated_at
-            FROM reports r
-            JOIN (SELECT symbol, MAX(generated_at) AS g FROM reports GROUP BY symbol) m
-              ON m.symbol = r.symbol AND m.g = r.generated_at
-            LEFT JOIN companies c ON c.symbol = r.symbol
-            ORDER BY r.generated_at DESC
-            LIMIT ?
-            """,
-            (limit,),
-        ).fetchall()
-    return [dict(r) for r in rows]
+    """Newest report per stock, newest first (the signed-in user's own)."""
+    nse.ensure_loaded()
+    rows = store.current().reports_latest_by_symbol(limit)
+    out = []
+    for r in rows:
+        company = nse.get_company(r["symbol"])
+        out.append({"symbol": r["symbol"], "name": company["name"] if company else r["symbol"],
+                    "label": r["label"], "generated_at": r["generated_at"]})
+    return out
 
 
 @router.get("/holdings")

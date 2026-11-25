@@ -3,14 +3,12 @@
 A failing source never stops the report: its question goes grey and the footer says so.
 All strings arrive display-ready, so the frontend does no maths.
 """
-import json
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from typing import Callable
 
-from . import ai, config, scoring
-from .db import connect
+from . import ai, config, scoring, store
 from .errors import ApiError
 from .scoring import QuestionResult
 from .sources import news as news_src
@@ -34,22 +32,13 @@ class Deps:
 
 # ----------------------------------------------------------------------------- cache
 def latest_report(symbol: str) -> dict | None:
-    with connect() as conn:
-        row = conn.execute(
-            "SELECT report_json FROM reports WHERE symbol = ? COLLATE NOCASE ORDER BY generated_at DESC LIMIT 1",
-            (symbol,),
-        ).fetchone()
-    return json.loads(row["report_json"]) if row else None
+    found = store.current().reports_recent(symbol, 1)
+    return found[0] if found else None
 
 
 def recent_reports(symbol: str, n: int = 2) -> list[dict]:
     """The n newest stored reports for a stock, newest first."""
-    with connect() as conn:
-        rows = conn.execute(
-            "SELECT report_json FROM reports WHERE symbol = ? COLLATE NOCASE ORDER BY generated_at DESC LIMIT ?",
-            (symbol, n),
-        ).fetchall()
-    return [json.loads(r["report_json"]) for r in rows]
+    return store.current().reports_recent(symbol, n)
 
 
 def _fresh(report: dict) -> bool:
@@ -61,12 +50,7 @@ def _fresh(report: dict) -> bool:
 
 
 def _save(report: dict) -> None:
-    with connect() as conn:
-        conn.execute(
-            "INSERT OR REPLACE INTO reports (symbol, generated_at, label, report_json) VALUES (?,?,?,?)",
-            (report["symbol"], report["generated_at"], report["label"]["code"],
-             json.dumps(report, ensure_ascii=False)),
-        )
+    store.current().reports_save(report)
 
 
 def get_report(symbol: str, refresh: bool = False, deps: Deps | None = None) -> dict:

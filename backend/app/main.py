@@ -1,21 +1,11 @@
-from contextlib import asynccontextmanager
-
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
-from .config import FRONTEND_DIR
-from .db import init_db
 from . import errors
+from .config import FRONTEND_DIR
 from .routes import router
 
-
-@asynccontextmanager
-async def lifespan(_: FastAPI):
-    init_db()
-    yield
-
-
-app = FastAPI(title="Stock Analyst (India) v0", lifespan=lifespan)
+app = FastAPI(title="Stock Analyst (India)")
 errors.install(app)
 app.include_router(router)
 
@@ -25,6 +15,6 @@ def health():
     return {"ok": True}
 
 
-# Mounted last so /api routes win.
+# Mounted last so /api routes win. In production the frontend is served by Vercel; this is for local use.
 if FRONTEND_DIR.exists():
     app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")

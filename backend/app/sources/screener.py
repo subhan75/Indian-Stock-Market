@@ -20,8 +20,7 @@ from urllib.parse import quote
 import requests
 from bs4 import BeautifulSoup
 
-from .. import config
-from ..db import connect
+from .. import config, memcache
 from .base import NotFound, SourceUnavailable
 
 BASE = "https://www.screener.in"
@@ -223,21 +222,15 @@ def _http_get(url: str) -> requests.Response:
 
 
 def _cache_get(url: str, ttl: timedelta) -> tuple[str, str] | None:
-    with connect() as conn:
-        row = conn.execute("SELECT body, fetched_at FROM page_cache WHERE url = ?", (url,)).fetchone()
-    if row and datetime.now(timezone.utc) - datetime.fromisoformat(row["fetched_at"]) < ttl:
-        return row["body"], row["fetched_at"]
+    entry = memcache.pages.get(url)
+    if entry and datetime.now(timezone.utc) - datetime.fromisoformat(entry[1]) < ttl:
+        return entry
     return None
 
 
 def _cache_put(url: str, body: str) -> str:
     stamp = datetime.now(timezone.utc).isoformat()
-    with connect() as conn:
-        conn.execute(
-            "INSERT INTO page_cache (url, body, fetched_at) VALUES (?,?,?) "
-            "ON CONFLICT(url) DO UPDATE SET body=excluded.body, fetched_at=excluded.fetched_at",
-            (url, body, stamp),
-        )
+    memcache.pages.put(url, (body, stamp))
     return stamp
 
 
