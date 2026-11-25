@@ -6,3 +6,6 @@ __pycache__/
 *.pyc
 *.sqlite3
 .pytest_cache/
+
+# Screenshots written by the browser checks
+scripts/browser/output/
