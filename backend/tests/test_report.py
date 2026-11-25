@@ -86,7 +86,7 @@ def test_full_report_matches_the_contract():
     assert rep["disclaimer"] == "Research aid, not financial advice."
     assert rep["generated_at"].endswith("+05:30")
     assert rep["price"] == {"display": "₹7,028.50", "change_display": "+2.3%", "direction": "up",
-                            "as_of": rep["price"]["as_of"]}
+                            "as_of": rep["price"]["as_of"], "value": 7028.5}
     assert [q["id"] for q in rep["questions"]] == ["growth", "efficiency", "debt", "price", "news"]
     assert [q["status"] for q in rep["questions"]] == ["green", "green", "green", "amber", "green"]
     assert rep["label"] == {"code": "looks_solid", "display": "Looks solid"}
@@ -209,6 +209,8 @@ def test_serious_news_turns_label_to_be_careful_and_is_shown_first():
             "Regulator fines company": ("yes", "bad", "yes"), "Profit dips": ("yes", "bad", "no")}
     rep = report.build_report("ABB", make_deps(headlines=heads, llm=ScriptedLLM(labels_for(spec), good_writer)))
     assert by_id(rep)["news"]["status"] == "red" and rep["label"]["code"] == "be_careful"
+    serious = {n["title"]: n["serious"] for n in rep["news"]}
+    assert serious == {"Regulator fines company": True, "Profit dips": False, "Orders rise": False}
     assert [n["title"] for n in rep["news"]] == ["Regulator fines company", "Profit dips", "Orders rise"]
     assert "Market round-up" not in [n["title"] for n in rep["news"]]   # not about the company
     assert by_id(rep)["news"]["cites"] == [n["id"] for n in rep["news"] if n["tone"] == "bad"]

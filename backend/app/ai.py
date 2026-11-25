@@ -6,12 +6,21 @@ report shows the facts without AI text ("ai_text": false). The model never decid
 the overall label; code does.
 """
 import json
+import logging
 import re
 from dataclasses import dataclass
 from typing import Protocol
 
 from . import config
 from .scoring import NewsLabel
+
+log = logging.getLogger("stock_analyst.ai")
+_SECRET = re.compile(r"sk-[A-Za-z0-9_\-]{6,}")
+
+
+def safe_text(value) -> str:
+    """Provider errors can echo part of an API key; never let one reach a log line."""
+    return _SECRET.sub("sk-***", str(value))[:300]
 
 CITE_RE = re.compile(r"\[([FN]\d+)\]")
 BANNED_RE = re.compile(
@@ -124,16 +133,20 @@ def label_headlines(llm: LLM | None, company_name: str, headlines: list[dict]) -
     if not headlines:
         return {}
     if llm is None or not config.LABELLER_MODEL:
+        log.warning("Headline labelling skipped: the OpenAI key or LABELLER_MODEL isn't configured.")
         return None
     user = json.dumps({"company": company_name, "headlines": headlines}, ensure_ascii=False)
     ids = [h["id"] for h in headlines]
-    for _ in range(MAX_ATTEMPTS):
+    for attempt in range(1, MAX_ATTEMPTS + 1):
         try:
-            labels = validate_labels(llm.complete_json(config.LABELLER_MODEL, LABELLER_SYSTEM, user), ids)
-        except AiUnavailable:
+            raw = llm.complete_json(config.LABELLER_MODEL, LABELLER_SYSTEM, user)
+        except AiUnavailable as exc:
+            log.warning("Headline labelling failed (provider error): %s", safe_text(exc))
             return None
+        labels = validate_labels(raw, ids)
         if labels is not None:
             return labels
+        log.warning("Headline labelling attempt %d rejected: output wasn't in the expected format.", attempt)
     return None
 
 
@@ -224,16 +237,24 @@ def write_report_text(llm: LLM | None, company_name: str, facts: list[dict], new
     """facts: [{id,label,value,as_of}]; news: [{id,title,date,summary}];
     questions: [{question,status,value}]. Returns {"overall":{text,cites},"about":{text,cites}} or None."""
     if llm is None or not config.WRITER_MODEL:
+        log.warning("Report writing skipped: the OpenAI key or WRITER_MODEL isn't configured.")
         return None
     user = json.dumps({"company": company_name, "overall_label": label_display, "questions": questions,
                        "facts": facts, "news": news}, ensure_ascii=False)
     valid_ids = {f["id"] for f in facts} | {n["id"] for n in news}
     source = _source_text(facts, news) + " " + " ".join(f"{q['value']}" for q in questions)
-    for _ in range(MAX_ATTEMPTS):
+    for attempt in range(1, MAX_ATTEMPTS + 1):
         try:
             data = _json_object(llm.complete_json(config.WRITER_MODEL, WRITER_SYSTEM, user))
-        except AiUnavailable:
+        except AiUnavailable as exc:
+            log.warning("Report writing failed (provider error): %s", safe_text(exc))
             return None
-        if data and all(check_passage(data.get(k), valid_ids, source) is None for k in ("overall", "about")):
+        if data is None:
+            failures = ["the response wasn't a JSON object"]
+        else:
+            failures = [f"{key}: {reason}" for key in ("overall", "about")
+                        if (reason := check_passage(data.get(key), valid_ids, source)) is not None]
+        if not failures:
             return {k: {"text": data[k]["text"].strip(), "cites": data[k]["cites"]} for k in ("overall", "about")}
+        log.warning("Report writing attempt %d rejected by the check: %s", attempt, "; ".join(failures))
     return None

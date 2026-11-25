@@ -61,7 +61,7 @@ def price_block(result: PriceResult) -> dict:
     """The `price` object of the Report contract, ready to display."""
     if not result.ok or result.price is None:
         return {"display": "Price unavailable", "change_display": "", "direction": "flat",
-                "as_of": format_time(result.fetched_at) if result.fetched_at else ""}
+                "as_of": format_time(result.fetched_at) if result.fetched_at else "", "value": None}
     price = result.price
     display = rupees(price, 0 if float(price).is_integer() else 2)
     if result.change_pct is None:
@@ -70,4 +70,4 @@ def price_block(result: PriceResult) -> dict:
         direction = "up" if result.change_pct > 0 else "down" if result.change_pct < 0 else "flat"
         change = f"{result.change_pct:+.1f}%"
     return {"display": display, "change_display": change, "direction": direction,
-            "as_of": format_time(result.fetched_at)}
+            "as_of": format_time(result.fetched_at), "value": float(price)}

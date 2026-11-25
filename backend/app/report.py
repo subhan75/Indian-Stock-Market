@@ -155,7 +155,8 @@ def build_report(symbol: str, deps: Deps) -> dict:
         news_items.append({
             "id": h["id"], "title": h["title"], "outlet": h["outlet"], "date_display": h["date"],
             "summary": _safe(lab.summary, h["title"]) if lab else "",
-            "tone": lab.tone if lab else "neutral", "url": original.url,
+            "tone": lab.tone if lab else "neutral", "serious": bool(lab.serious) if lab else False,
+            "url": original.url,
         })
 
     # 4. Number the facts and wire each question to its facts.
