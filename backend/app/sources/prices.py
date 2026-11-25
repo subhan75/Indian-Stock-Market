@@ -21,15 +21,20 @@ class PriceResult:
     note: str = ""            # plain-words reason when not ok
 
 
-def _yf_fetch(symbol: str) -> tuple[float, float | None]:
+def _yf_quote(ticker: str) -> tuple[float, float | None]:
+    """(last price, previous close) for any Yahoo ticker, e.g. 'ABB.NS' or '^NSEI'."""
     import yfinance as yf  # imported lazily: it is slow to import and not needed by every test
 
-    info = yf.Ticker(f"{symbol}.NS").fast_info
+    info = yf.Ticker(ticker).fast_info
     last = info["last_price"]
     prev = info["previous_close"]
     if last is None or last != last:  # None or NaN
         raise ValueError("no price")
     return float(last), (float(prev) if prev else None)
+
+
+def _yf_fetch(symbol: str) -> tuple[float, float | None]:
+    return _yf_quote(f"{symbol}.NS")
 
 
 def fetch_price(symbol: str, fallback_price: float | None = None, fallback_url: str = "",
@@ -55,6 +60,14 @@ def format_time(dt: datetime) -> str:
     dt = dt.astimezone(IST)
     hour = dt.hour % 12 or 12
     return f"{dt.day} {dt:%b}, {hour}:{dt:%M} {'am' if dt.hour < 12 else 'pm'}"
+
+
+def format_clock(dt: datetime, now: datetime) -> str:
+    """'2:10 pm' for a time on the same India-time date as `now`, else '24 Nov, 9:05 pm'."""
+    d, n = dt.astimezone(IST), now.astimezone(IST)
+    hour = d.hour % 12 or 12
+    clock = f"{hour}:{d:%M} {'am' if d.hour < 12 else 'pm'}"
+    return clock if d.date() == n.date() else f"{d.day} {d:%b}, {clock}"
 
 
 def price_block(result: PriceResult) -> dict:

@@ -1,4 +1,5 @@
 """Google News RSS for a company: trusted outlets only, last 30 days, de-duplicated."""
+import html
 import re
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
@@ -35,6 +36,7 @@ class Headline:
     outlet: str          # canonical trusted-outlet name
     published: datetime  # timezone-aware
     url: str
+    description: str = ""
 
     @property
     def date_display(self) -> str:
@@ -125,3 +127,43 @@ def fetch_news(company_name: str, http_get: Callable[[str], requests.Response] =
         return NewsResult(True, parse_feed(resp.content, now), fetched, url)
     except (requests.RequestException, SourceUnavailable):
         return NewsResult(False, [], fetched, url, "Couldn't fetch news right now.")
+
+
+# ----------------------------------------------------------------------------- plain outlet feeds (Phase 3)
+DESCRIPTION_MAX_CHARS = 200
+_TAGS = re.compile(r"<[^>]+>")
+
+
+def clean_description(raw: str) -> str:
+    """Feed descriptions often contain HTML. Show plain text only, capped in length."""
+    text = " ".join(html.unescape(_TAGS.sub(" ", raw or "")).split())
+    return text if len(text) <= DESCRIPTION_MAX_CHARS else text[: DESCRIPTION_MAX_CHARS - 1].rstrip() + "…"
+
+
+def parse_plain_feed(content: bytes | str, outlet: str, now: datetime | None = None,
+                     window_hours: int = 24) -> list[Headline]:
+    """Headlines from an outlet's own RSS feed (no Google 'source' tag): the outlet is fixed by the caller.
+    Items with no date, link or title are dropped, as are items outside the time window."""
+    now = now or datetime.now(timezone.utc)
+    cutoff = now - timedelta(hours=window_hours)
+    out: list[Headline] = []
+    for entry in feedparser.parse(content).entries:
+        parsed, link, title = entry.get("published_parsed"), entry.get("link", ""), (entry.get("title") or "").strip()
+        if not (parsed and link and title):
+            continue
+        published = datetime(*parsed[:6], tzinfo=timezone.utc)
+        if published < cutoff or published > now + timedelta(hours=1):
+            continue
+        out.append(Headline(title, outlet, published, link, clean_description(entry.get("summary", ""))))
+    out.sort(key=lambda h: h.published, reverse=True)
+    return out
+
+
+def merge_headlines(*feeds: list[Headline]) -> list[Headline]:
+    """Several feeds into one list: newest first, the same story (link or near-identical title) only once."""
+    merged = sorted((h for feed in feeds for h in feed), key=lambda h: h.published, reverse=True)
+    unique: list[Headline] = []
+    for h in merged:
+        if not any(is_duplicate(h, u) for u in unique):
+            unique.append(h)
+    return unique

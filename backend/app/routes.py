@@ -2,7 +2,7 @@ from typing import Any
 
 from fastapi import APIRouter, Body, Query
 
-from . import holdings, portfolio, refresh, report
+from . import holdings, marketday, portfolio, refresh, report
 from .db import connect
 from .errors import ApiError
 from .sources import nse
@@ -60,6 +60,11 @@ def edit_holding(symbol: str, body: Any = Body(...)):
 @router.delete("/holdings/{symbol}")
 def remove_holding(symbol: str):
     return holdings.delete(symbol)
+
+
+@router.get("/market/today")
+def market_today(refresh: bool = False):
+    return marketday.get_market(refresh=refresh)
 
 
 @router.post("/refresh-all")
