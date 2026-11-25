@@ -36,7 +36,7 @@ Extends [V0_Description.md](V0_Description.md). Where the two disagree, this fil
 - **Direction:** `"up"`, `"down"`, `"flat"` (or `null` where there is nothing to show).
 - **Symbols:** upper-case on the way in, stored and returned upper-case. Pattern `^[A-Za-z0-9&\-]{1,20}$`.
 - **Links:** only `http`/`https`. The frontend refuses any other scheme.
-- **No advice:** no user-visible string produced by Phase 2 or 3 code contains buy, sell, target or recommend (flag text, Telegram text and AI text are all checked).
+- **No advice:** no *generated* text (flag reasons, alert text, AI-written text, point summaries) contains buy, sell, target or recommend, and each is checked by a test. Static field names and validation messages that use the user's own term "buy price" (the form label, the column heading, the error catalogue) are not advice and are allowed. This is why the price flag says "what you paid".
 
 ---
 
@@ -180,7 +180,7 @@ Inputs: the holding, the current price, the **latest** stored report (L) and the
 |---|---|---|---|
 | `be_careful` | holdings and watching | L.label is `be_careful` | `Label is Be careful` |
 | `label_worse` | holdings and watching | P exists, rank(L.label) < rank(P.label) with rank looks_solid 3, mixed 2, be_careful 1, **and** no question is grey in L that was not grey in P (D4) | `Label went from {Old} to {New}` |
-| `price_drop` | holdings only | current price is known and `round((buy - price) / buy * 100, 2) >= 20` | `Price is {n}% below your buy price` where n is that percentage rounded down to a whole number |
+| `price_drop` | holdings only | current price is known and `round((buy - price) / buy * 100, 2) >= 20` | `Price is {n}% below what you paid` where n is that percentage rounded down to a whole number |
 | `serious_news` | holdings and watching | P exists, P's Google News source was ok, and L has at least one `news[]` item with `serious: true` whose URL is not in P's news URLs | `New serious news since the last refresh` |
 
 - `flag.on` is true when at least one rule fires. `reasons` lists them in the table's order. `reason` is the texts joined with `"; "`.
