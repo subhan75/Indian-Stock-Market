@@ -67,17 +67,26 @@ reports(user_id uuid not null default auth.uid() references auth.users(id) on de
 | `POST /api/holdings/{symbol}/refresh` | none | 200 `{"symbol","refreshed":true,"failed":null,"new_flag":false}`; on Screener failure `refreshed:false`, `failed:{"reason":"Screener.in couldn't be reached, so the earlier report was kept."}` | 404 `not_found` "{SYM} isn't in your stocks." |
 | `GET /api/reports/recent` | | now the signed-in user's stocks | |
 
-- Error codes added: `unauthorized` (HTTP 401), `rate_limited` (HTTP 429). Database trouble: 503 `source_unavailable`
-  "The database isn't reachable right now. Try again in a minute."
+- Error codes added: `unauthorized` (HTTP 401), `forbidden` (HTTP 403, a change sent from another site: "That request
+  wasn't allowed from this site."), `rate_limited` (HTTP 429). Database trouble: 503 `source_unavailable` "The database
+  isn't reachable right now. Try again in a minute."; sign-in service trouble: 503 "Sign-in isn't available right now.
+  Try again in a minute."
 - **Cookies:** `HttpOnly`, `Secure` when `COOKIE_SECURE=true`, `SameSite=Lax`, `Path=/`. Local http development uses
   `COOKIE_SECURE=false`.
 - **CSRF:** POST/PUT/DELETE need `Content-Type: application/json` and, when an `Origin` header is present, it must be
   in `ALLOWED_ORIGINS` (the local server also allows its own origin).
-- **Token use:** every request verifies the access token with Supabase (cached about 60 s). When it is near expiry the
+- **Token use (as built):** every access token is checked with Supabase itself (`get_user`), not just decoded, and the
+  answer is trusted for 30 seconds. This also catches sessions that were signed out (a locally decoded token cannot
+  tell, and Supabase cannot revoke an access token before it expires). Logout therefore takes effect within 30 s.
+  An outage of Supabase Auth during a request is a 503 and keeps the cookies; it is never treated as "signed out". When it is near expiry the
   backend renews it from the refresh token (refresh tokens are single-use, so a per-session lock stops simultaneous
   requests from burning it) and sets fresh cookies.
 - **Refresh all** is one request per stock from the UI (Vercel's proxy limit is 120 s). `POST /api/refresh-all` stays
   for scripts.
+- **Login limits:** 5 wrong passwords per email, or 25 failures per address, in 5 minutes give the 429 above (an outage
+  or a rate limit from Supabase does not count against the user). Supabase Auth also applies its own limits.
+- **Hardening done at the API:** the interactive docs and `/openapi.json` are switched off; error bodies never contain
+  tokens or internal details; tokens and passwords are never logged (tested).
 - Out of scope: sign-up page, password reset emails, MFA, social login.
 
 ## 5. Configuration (names only; values are never committed or read by the assistant)

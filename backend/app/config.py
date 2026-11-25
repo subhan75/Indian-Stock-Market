@@ -18,6 +18,7 @@ WRITER_MODEL = os.getenv("WRITER_MODEL", "")
 SUPABASE_URL = os.getenv("SUPABASE_URL", "").strip().rstrip("/")
 SUPABASE_PUBLISHABLE_KEY = os.getenv("SUPABASE_PUBLISHABLE_KEY", "").strip()
 DB_TIMEOUT_SECONDS = 10
+AUTH_VERIFY_TTL_SECONDS = 30     # how long a token Supabase vouched for is trusted without asking again
 DB_RETRY_READS = True        # supabase-py retries failed reads (not writes) a couple of times with a short delay
 
 # Login cookies and CSRF (origins allowed to send POST/PUT/DELETE; the local server's own origin is always allowed)

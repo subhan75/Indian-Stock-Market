@@ -28,6 +28,10 @@ class MemCache:
             while len(self._data) > self._max:
                 self._data.popitem(last=False)   # evict the least recently used
 
+    def pop(self, key: str) -> None:
+        with self._lock:
+            self._data.pop(key, None)
+
     def clear(self) -> None:
         with self._lock:
             self._data.clear()
@@ -40,9 +44,13 @@ class MemCache:
 # One cache per kind of data, shared by every user (it is all public).
 pages = MemCache(max_entries=300)    # Screener pages, ~200 KB each
 market = MemCache(max_entries=4)     # the Market today page
+verified = MemCache(max_entries=1000)    # access tokens Supabase vouched for, for a few seconds (see auth.py)
+refreshed = MemCache(max_entries=1000)   # sessions just renewed, so simultaneous requests don't burn a refresh token
 
 
 def clear_all() -> None:
     """Used by tests to start from nothing."""
     pages.clear()
     market.clear()
+    verified.clear()
+    refreshed.clear()

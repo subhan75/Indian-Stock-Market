@@ -22,6 +22,10 @@ class StoreError(Exception):
     """The database couldn't be reached or answered unexpectedly. The API turns this into a 503."""
 
 
+class NotAuthorized(StoreError):
+    """The user's token was rejected (expired or invalid). The API turns this into a 401, not a 503."""
+
+
 class Conflict(Exception):
     """A unique constraint was violated (for example the same stock saved twice)."""
 

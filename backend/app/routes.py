@@ -1,12 +1,13 @@
 from typing import Any
 
-from fastapi import APIRouter, Body, Query
+from fastapi import APIRouter, Body, Depends, Query
 
-from . import holdings, marketday, portfolio, refresh, report, store
+from . import holdings, marketday, portfolio, refresh, report, session, store
 from .errors import ApiError
 from .sources import nse
 
-router = APIRouter(prefix="/api")
+# Every route here needs a signed-in user; the dependency also gives the request that user's own store.
+router = APIRouter(prefix="/api", dependencies=[Depends(session.require_user)])
 
 
 @router.get("/stocks/search")

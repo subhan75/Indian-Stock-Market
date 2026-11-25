@@ -16,17 +16,13 @@ from supabase import Client, create_client
 from supabase.lib.client_options import SyncClientOptions
 
 from . import config
-from .store import REPORTS_KEPT_PER_STOCK, Conflict, StoreError
+from .store import REPORTS_KEPT_PER_STOCK, Conflict, NotAuthorized, StoreError
 
 UNIQUE_VIOLATION = "23505"
 INSUFFICIENT_PRIVILEGE = "42501"
 
 _pool_lock = threading.Lock()
 _shared_http: httpx.Client | None = None
-
-
-class NotAuthorized(StoreError):
-    """The user's token was rejected (expired or invalid). The API turns this into a 401."""
 
 
 def shared_http() -> httpx.Client:

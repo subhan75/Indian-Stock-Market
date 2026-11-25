@@ -7,6 +7,7 @@ Supabase project when the TEST_SUPABASE_* variables are set, which is what prove
 """
 import json
 import re
+import time
 from typing import Any
 
 import httpx
@@ -50,9 +51,12 @@ class FakePostgrest:
         if not match or match.group(1) not in self.tables:
             return error(404, "42P01", "relation does not exist")
         table = match.group(1)
-        user = self._user(request)
-        if user is None:
+        claims = self._claims(request)
+        if claims is None or claims.get("role") != "authenticated":
             return error(401, "42501", f"permission denied for table {table}")      # `anon` has no grants
+        if claims.get("exp") is not None and claims["exp"] < time.time():
+            return error(401, "PGRST301", "JWT expired")
+        user = claims["sub"]
         params = request.url.params
         if request.method == "GET":
             return self._select(table, user, params)
@@ -66,13 +70,12 @@ class FakePostgrest:
         return error(405, "PGRST000", "method not allowed")
 
     @staticmethod
-    def _user(request: httpx.Request) -> str | None:
+    def _claims(request: httpx.Request) -> dict | None:
         token = request.headers.get("authorization", "").removeprefix("Bearer ").strip()
         try:
-            claims = jwt.decode(token, options={"verify_signature": False})
+            return jwt.decode(token, options={"verify_signature": False})
         except jwt.PyJWTError:
             return None                                                          # the publishable key alone = anon
-        return claims.get("sub") if claims.get("role") == "authenticated" else None
 
     # ------------------------------------------------------------------ filtering
     @staticmethod
