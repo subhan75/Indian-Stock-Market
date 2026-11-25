@@ -16,4 +16,6 @@ export async function api(path) {
 
 export const searchStocks = (q) => api(`/api/stocks/search?q=${encodeURIComponent(q)}`);
 export const recentReports = () => api("/api/reports/recent");
-export const reportUrl = (symbol) => `/report.html?symbol=${encodeURIComponent(symbol)}`;
+export const getReport = (symbol, refresh = false) =>
+  api(`/api/reports/${encodeURIComponent(symbol)}${refresh ? "?refresh=true" : ""}`);
+export const reportUrl =(symbol) => `/report.html?symbol=${encodeURIComponent(symbol)}`;
