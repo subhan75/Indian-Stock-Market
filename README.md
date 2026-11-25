@@ -78,6 +78,53 @@ you have read reports for stocks you know (that is part of the plan).
    on failure the report shows facts only.
 5. If any source fails, only its question goes grey and the footer says when it last worked.
 
+### How My stocks is built (Phase 2)
+
+`GET /api/holdings` (opening the page):
+
+1. Read your saved holdings and, for each, its two newest stored reports. This reads cached reports only and
+   **never calls Screener**, so the page opens fast.
+2. Fetch today's price for every stock in parallel from Yahoo Finance. If that fails, use the price in the stock's
+   last report; if there is none, the stock is left out of the totals and a note says so.
+3. Code works out value (shares × price), gain or loss (in ₹ and %) and the totals. The AI is not involved.
+4. Code applies the four "Look at this" rules by comparing the latest report with the previous one: label is
+   Be careful; label got worse; price 20% or more below what you paid; new serious news. A label that drops only
+   because a question went grey (a data outage) is not counted as "worse". The flag text is fixed wording and
+   never advice.
+5. Rows are ordered flagged first, then by value, then watching stocks A to Z.
+
+`POST /api/holdings` and `PUT /api/holdings/{symbol}` (add and edit): validate the input with plain-sentence errors,
+save, then build the stock's first report as a best effort (a report failure never blocks the save). Switching a
+stock to "watching" clears its shares and buy price.
+
+`POST /api/refresh-all` (the Refresh all button):
+
+1. Record each stock's flags from its stored reports **before** anything changes.
+2. Rebuild every report one at a time (Screener's 3-second gap keeps it polite, about 5 seconds per stock).
+3. If Screener.in can't be reached for a stock, keep its earlier report and list it under `failed`. A failed news,
+   price or AI fetch still saves, with only that question grey.
+4. Compare flags before and after: a stock whose flag gained a reason is listed under `new_flags`.
+5. Only one refresh runs at a time; a second request is told to try again in a minute.
+
+### How Market today is built (Phase 3)
+
+`GET /api/market/today`:
+
+1. Fetch Nifty 50 and Sensex (Yahoo Finance) and the ET Markets and Business Standard feeds in parallel.
+2. Keep the last 24 hours, strip HTML from descriptions, sort newest first and drop the same story seen twice. The
+   10 newest are the headlines shown (`H1`…`H10`).
+3. AI writes up to 3 short points from exactly those 10 headlines and the index figures. The same kind of checker
+   as the report rejects a point that cites a headline that isn't on the page, leaves a sentence uncited, invents a
+   number or uses buy/sell/target/recommend. A failing point is dropped; if none pass, the page shows headlines only.
+4. This market part is cached for 15 minutes (`?refresh=true` skips it). A page where every source failed is not
+   cached, so the next load retries.
+5. On every request, whether cached or not: code matches your saved stocks against the **titles of all headlines
+   from the last 24 hours** (not just the 10 shown) for "Your stocks in the news", and lists the stocks you marked as
+   watching with their latest label.
+6. If a source fails, only its block says so, and the footer names it and when it last worked.
+
+More detail and worked examples: [Documents/Testing/Testing_Guide.md](Documents/Testing/Testing_Guide.md).
+
 ## Notes from building against live pages
 
 - Screener's peers table is inline in the company page (no separate request). Its P/E column is found by
