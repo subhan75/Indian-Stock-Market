@@ -1,0 +1,70 @@
+/* Phones and touch screens. Loaded last on every page so it can adjust the page-specific styles. */
+
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { -webkit-tap-highlight-color: rgb(20 20 26 / .08); }
+
+/* No 300 ms tap delay or accidental double-tap zoom on anything you press */
+a, button, input, summary, label, [role="option"] { touch-action: manipulation; }
+
+/* iPhone Safari zooms into any field smaller than 16px */
+input, select, textarea { font-size: 16px; }
+.mini-search input { font-size: 16px; height: 44px; }
+
+/* Every button is at least 44px tall */
+.btn, .btn-secondary { min-height: 44px; }
+
+/* Small things you tap get a 44px-tall tap area without looking bigger */
+a.cite { position: relative; }
+a.cite::after { content: ""; position: absolute; inset: -13px -6px; }
+details > summary { display: flex; align-items: center; min-height: 44px; }
+
+/* The tab-bar icons only exist on phones */
+.nav-icon { display: none; }
+
+@media (max-width: 720px) {
+  /* Room for the bottom bar, and for notches */
+  body { padding-bottom: calc(68px + env(safe-area-inset-bottom)); }
+  .wrap {
+    padding-left: max(var(--space-4), env(safe-area-inset-left));
+    padding-right: max(var(--space-4), env(safe-area-inset-right));
+  }
+
+  /* The three pages become a tab bar at the bottom, where a thumb reaches */
+  .nav {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; margin: 0;
+    background: var(--surface); border-top: 1px solid var(--line); border-bottom: 0;
+    padding: 0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  .nav a {
+    flex-direction: column; justify-content: center; gap: 2px; min-height: 60px; padding: 6px 4px; margin: 0;
+    border-bottom: 0; border-top: 3px solid transparent; font-size: 12px; text-align: center;
+  }
+  .nav a[aria-current="page"] { border-top-color: var(--ink); }
+  .nav-icon { display: block; width: 24px; height: 24px; }
+
+  /* A crowded top bar: keep only what is needed */
+  .user-email { display: none; }
+  .topbar { padding: var(--space-3) 0; }
+
+  /* Dialogs slide up from the bottom like a phone sheet */
+  dialog {
+    position: fixed; inset: auto 0 0 0; margin: 0; width: 100%; max-width: 100%; max-height: 92dvh;
+    overflow-y: auto; border-radius: 18px 18px 0 0; border-bottom: 0;
+    padding-bottom: calc(var(--space-5) + env(safe-area-inset-bottom));
+  }
+
+  /* Wide tables scroll inside their card instead of widening the page */
+  .facts-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+}
+
+/* My stocks turns into cards on tablets too, because the table needs about 790px */
+@media (max-width: 860px) {
+  .holdings a.name { display: inline-flex; align-items: center; min-height: 44px; }
+}
+
+@media (max-width: 380px) {
+  .price-main { font-size: 22px; }
+  .totals { gap: var(--space-2); }
+  .total { padding: var(--space-3) var(--space-4); }
+}

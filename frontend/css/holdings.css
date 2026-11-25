@@ -77,8 +77,8 @@ dialog h2 { margin: 0 0 var(--space-4); font-size: 18px; }
 .dialog-actions { display: flex; justify-content: flex-end; gap: var(--space-3); margin-top: var(--space-4); }
 #confirm-text { margin: 0; font-size: 15px; }
 
-/* Phones: each row becomes a card */
-@media (max-width: 720px) {
+/* Phones and tablets: each row becomes a card (the table needs about 790px) */
+@media (max-width: 860px) {
   .totals { grid-template-columns: 1fr; }
   .actions { width: 100%; }
   .actions .btn, .actions .btn-secondary { flex: 1; }

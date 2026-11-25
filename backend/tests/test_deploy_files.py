@@ -112,3 +112,33 @@ def test_env_example_lists_the_settings_and_no_secret_keys():
     for name in ("SUPABASE_URL", "SUPABASE_PUBLISHABLE_KEY", "COOKIE_SECURE", "ALLOWED_ORIGINS", "OPENAI_API_KEY"):
         assert name in text
     assert not re.search(r"^\s*SUPABASE_(SECRET|SERVICE)", text, re.M)
+
+
+# ------------------------------------------------------------------ installable web app and phone metadata
+PAGES = ["index.html", "report.html", "holdings.html", "market.html", "login.html"]
+
+
+@pytest.mark.parametrize("page", PAGES)
+def test_every_page_is_ready_for_phones(page):
+    html = read(f"frontend/{page}")
+    assert 'name="viewport"' in html and "viewport-fit=cover" in html
+    assert 'rel="manifest" href="/manifest.webmanifest"' in html
+    assert 'name="theme-color"' in html and 'rel="apple-touch-icon"' in html
+    assert html.index("/css/mobile.css") > html.index("/css/app.css"), "mobile.css must load after the other styles"
+    assert 'maximum-scale' not in html and 'user-scalable' not in html, "never disable pinch-zoom"
+
+
+def test_the_manifest_points_at_real_icons():
+    manifest = json.loads(read("frontend/manifest.webmanifest"))
+    assert manifest["display"] == "standalone" and manifest["start_url"] == "/"
+    assert {i["sizes"] for i in manifest["icons"]} >= {"192x192", "512x512"}
+    for icon in manifest["icons"]:
+        assert (ROOT / "frontend" / icon["src"].lstrip("/")).exists(), icon["src"]
+    assert (ROOT / "frontend" / "icons" / "apple-touch-icon.png").exists()
+
+
+def test_the_phone_stylesheet_keeps_inputs_at_16px_and_buttons_44px():
+    css = read("frontend/css/mobile.css")
+    assert re.search(r"input, select, textarea \{ font-size: 16px; \}", css)
+    assert re.search(r"\.btn, \.btn-secondary \{ min-height: 44px; \}", css)
+    assert "touch-action: manipulation" in css and "env(safe-area-inset-bottom)" in css

@@ -155,7 +155,9 @@ function renderFacts(r) {
     tr.append(id, el("td", null, f.label), value, el("td", null, f.as_of), src);
     table.append(tr);
   }
-  details.append(table);
+  const wrap = el("div", "facts-wrap");
+  wrap.append(table);
+  details.append(wrap);
   return details;
 }
 
