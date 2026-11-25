@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Query
 
+from . import report
 from .db import connect
 from .errors import ApiError
 from .sources import nse
@@ -33,3 +34,9 @@ def recent_reports(limit: int = Query(10, ge=1, le=50)):
             (limit,),
         ).fetchall()
     return [dict(r) for r in rows]
+
+
+# Registered after /reports/recent so the literal path wins over {symbol}.
+@router.get("/reports/{symbol}")
+def get_report(symbol: str, refresh: bool = False):
+    return report.get_report(symbol, refresh=refresh)

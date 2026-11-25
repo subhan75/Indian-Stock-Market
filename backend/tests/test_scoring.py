@@ -187,7 +187,7 @@ def test_real_abb_scores():
     rs, label = scoring.score_all(real("ABB"), [])
     by = {r.id: r.status for r in rs}
     assert [r.id for r in rs] == scoring.QUESTION_ORDER
-    assert by["growth"] == "green"       # sales up ~19% over the last 4 quarters
+    assert by["growth"] == "green"       # sales up 11.7% over the last 4 quarters
     assert by["efficiency"] == "green"   # ROCE 29.9
     assert by["debt"] == "green"         # 145 / 9,339
     assert by["price"] == "amber"        # P/E 94.8 vs 85.8 median = 1.10x
