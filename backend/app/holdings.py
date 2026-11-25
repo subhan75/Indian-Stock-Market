@@ -72,7 +72,7 @@ _SELECT = ("SELECT h.symbol, h.shares, h.buy_price, h.watching, h.added_at, c.na
 
 def list_holdings() -> list[dict]:
     with connect() as conn:
-        rows = conn.execute(_SELECT + " ORDER BY h.added_at, h.symbol").fetchall()
+        rows = conn.execute(_SELECT + " ORDER BY h.added_at, h.rowid").fetchall()
     return [_saved(r) for r in rows]
 
 

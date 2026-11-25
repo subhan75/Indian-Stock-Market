@@ -80,6 +80,21 @@ def get_report(symbol: str, refresh: bool = False, deps: Deps | None = None) -> 
     return report
 
 
+class ScreenerUnavailable(Exception):
+    """A refresh couldn't reach Screener.in, so the stored report is kept (spec decision D3)."""
+
+
+def refresh_keep_previous(symbol: str, deps: "Deps | None" = None) -> dict:
+    """Build a fresh report and store it, unless Screener.in failed: a report without the numbers must
+    never replace a good one. News, price or AI failures still save (their questions go grey)."""
+    symbol = symbol.strip().upper()
+    rep = build_report(symbol, deps or Deps())
+    if not any(s["name"] == "Screener.in" and s["ok"] for s in rep["sources"]):
+        raise ScreenerUnavailable(symbol)
+    _save(rep)
+    return rep
+
+
 # ----------------------------------------------------------------------------- helpers
 def _company(symbol: str) -> dict:
     company = nse.get_company(symbol)

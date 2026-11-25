@@ -2,7 +2,7 @@ from typing import Any
 
 from fastapi import APIRouter, Body, Query
 
-from . import holdings, portfolio, report
+from . import holdings, portfolio, refresh, report
 from .db import connect
 from .errors import ApiError
 from .sources import nse
@@ -60,6 +60,11 @@ def edit_holding(symbol: str, body: Any = Body(...)):
 @router.delete("/holdings/{symbol}")
 def remove_holding(symbol: str):
     return holdings.delete(symbol)
+
+
+@router.post("/refresh-all")
+def refresh_all():
+    return refresh.refresh_all()
 
 
 # Registered after /reports/recent so the literal path wins over {symbol}.
