@@ -13,6 +13,17 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 LABELLER_MODEL = os.getenv("LABELLER_MODEL", "")
 WRITER_MODEL = os.getenv("WRITER_MODEL", "")
 
+# Supabase: the project URL and the PUBLISHABLE (anon) key only. This project never uses a secret / service-role
+# key, so nothing can bypass Row Level Security. Set these as environment variables (Railway, your shell).
+SUPABASE_URL = os.getenv("SUPABASE_URL", "").strip().rstrip("/")
+SUPABASE_PUBLISHABLE_KEY = os.getenv("SUPABASE_PUBLISHABLE_KEY", "").strip()
+DB_TIMEOUT_SECONDS = 10
+DB_RETRY_READS = True        # supabase-py retries failed reads (not writes) a couple of times with a short delay
+
+# Login cookies and CSRF (origins allowed to send POST/PUT/DELETE; the local server's own origin is always allowed)
+COOKIE_SECURE = os.getenv("COOKIE_SECURE", "true").strip().lower() not in {"0", "false", "no"}
+ALLOWED_ORIGINS = [o.strip().rstrip("/") for o in os.getenv("ALLOWED_ORIGINS", "").split(",") if o.strip()]
+
 CACHE_TTL_HOURS = 24
 SCREENER_MIN_GAP_SECONDS = 3   # be polite: wait between Screener requests
 COMPANY_LIST_TTL_DAYS = 7
