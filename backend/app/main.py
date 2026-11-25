@@ -5,6 +5,8 @@ from fastapi.staticfiles import StaticFiles
 
 from .config import FRONTEND_DIR
 from .db import init_db
+from . import errors
+from .routes import router
 
 
 @asynccontextmanager
@@ -14,6 +16,8 @@ async def lifespan(_: FastAPI):
 
 
 app = FastAPI(title="Stock Analyst (India) v0", lifespan=lifespan)
+errors.install(app)
+app.include_router(router)
 
 
 @app.get("/api/health")
