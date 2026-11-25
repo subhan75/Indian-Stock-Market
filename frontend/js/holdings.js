@@ -2,7 +2,7 @@ import { addHolding, editHolding, getHoldings, refreshHolding, removeHolding } f
 import { initCombobox } from "./combobox.js";
 import { flagPill, labelPill, plainPill } from "./labels.js";
 import { busyButton, loadingNote, spinnerIcon } from "./loading.js";
-import { arrowIcon, el, reportLink } from "./ui.js";
+import { announce, arrowIcon, el, reportLink } from "./ui.js";
 
 const content = document.getElementById("content");
 const totalsEl = document.getElementById("totals");
@@ -41,9 +41,12 @@ function setStatus(message, kind = "") {
 }
 
 // ---------------------------------------------------------------- list
+// Each value carries its own label as a real element: a screen reader hears it in the card layout on phones,
+// where the table's column headings are hidden. (It is hidden by CSS on wide screens, where the headings do the job.)
 function cell(label, className) {
   const td = el("td", className);
-  td.dataset.label = label;
+  td.setAttribute("role", "cell");
+  if (label) td.append(el("span", "cell-label", label));
   return td;
 }
 
@@ -56,9 +59,10 @@ function moneyCell(text, direction) {
 
 function renderRow(row) {
   const tr = el("tr");
+  tr.setAttribute("role", "row");
 
   const stock = cell("Stock", "cell-stock");
-  stock.append(reportLink(row.report_url, row.name, "name"), el("span", "sub sym", `NSE: ${row.symbol}`));
+  stock.append(reportLink(`${row.report_url}&from=holdings`, row.name, "name"), el("span", "sub sym", `NSE: ${row.symbol}`));
   if (row.watching) stock.append(el("div", "watch-tag", "")), stock.lastChild.append(plainPill("Watching"));
 
   const held = cell("Shares and buy price");
@@ -143,16 +147,22 @@ function renderList() {
   if (!data.rows.length) return renderEmpty();
   renderTotals(data.totals);
   const table = el("table", "holdings");
+  table.setAttribute("role", "table");
+  table.setAttribute("aria-label", "Your stocks");
   const head = el("tr");
+  head.setAttribute("role", "row");
   ["Stock", "Shares and buy price", "Value today", "Gain or loss", "Label", "Look at this", ""].forEach((h) => {
     const th = el("th", null, h);
     th.scope = "col";
+    th.setAttribute("role", "columnheader");
     if (!h) th.append(el("span", "sr-only", "Actions"));
     head.append(th);
   });
   const thead = el("thead");
+  thead.setAttribute("role", "rowgroup");
   thead.append(head);
   const tbody = el("tbody");
+  tbody.setAttribute("role", "rowgroup");
   data.rows.forEach((r) => tbody.append(renderRow(r)));
   table.append(thead, tbody);
   const wrap = el("div", "table-wrap");
@@ -191,6 +201,10 @@ async function load(showSkeleton) {
     data = await getHoldings();
     stopLoading();
     renderList();
+    if (showSkeleton) {
+      const n = data.rows.length;
+      announce(n ? `Your stocks are ready. ${n} ${n === 1 ? "stock" : "stocks"}.` : "Your stocks are ready. You have none yet.");
+    }
   } catch (err) {
     stopLoading();
     renderError(err.message);
@@ -240,9 +254,21 @@ async function removeRow(row) {
 }
 
 // ---------------------------------------------------------------- add / edit dialog
-function showFormError(message) {
+// Show a form error, mark the field it is about (aria-invalid) and tie the message to it for screen readers.
+function showFormError(message, field = null) {
   formError.textContent = message;
   formError.hidden = !message;
+  [stockInput, sharesInput, priceInput].forEach((f) => {
+    const bad = Boolean(message) && f === field;
+    f.setAttribute("aria-invalid", String(bad));
+    if (bad) f.setAttribute("aria-describedby", "form-error"); else f.removeAttribute("aria-describedby");
+  });
+  if (message && field) field.focus();
+}
+
+function fieldFor(message) {
+  const m = message.toLowerCase();
+  return m.includes("shares") ? sharesInput : m.includes("buy price") ? priceInput : stockInput;
 }
 
 function syncOwnFields() {
@@ -268,15 +294,15 @@ function openDialog(row) {
 }
 
 function readForm() {
-  if (!chosen) return { error: "Choose a stock from the suggestions." };
+  if (!chosen) return { error: "Choose a stock from the suggestions.", field: stockInput };
   if (watchingBox.checked) return { body: { symbol: chosen, watching: true } };
   const sharesText = sharesInput.value.trim();
   if (!/^\d+$/.test(sharesText) || Number(sharesText) < 1) {
-    return { error: "Enter the number of shares as a whole number, 1 or more." };
+    return { error: "Enter the number of shares as a whole number, 1 or more.", field: sharesInput };
   }
   const price = Number(priceInput.value);
   if (!priceInput.value.trim() || !Number.isFinite(price) || price <= 0) {
-    return { error: "Enter your average buy price in rupees, more than 0." };
+    return { error: "Enter your average buy price in rupees, more than 0.", field: priceInput };
   }
   return { body: { symbol: chosen, watching: false, shares: Number(sharesText), buy_price: price } };
 }
@@ -301,8 +327,8 @@ cancelBtn.addEventListener("click", () => dialog.close());
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
   if (saveBtn.disabled) return;
-  const { body, error } = readForm();
-  if (error) return showFormError(error);
+  const { body, error, field } = readForm();
+  if (error) return showFormError(error, field);
 
   if (editing && !editing.watching && body.watching) {
     const ok = await confirmAction(`This clears your shares and buy price for ${editing.name}. Continue?`, "Continue");
@@ -317,7 +343,7 @@ form.addEventListener("submit", async (e) => {
     setStatus(`Saved ${saved.name}.`);
     await load(false);
   } catch (err) {
-    showFormError(err.message);
+    showFormError(err.message, fieldFor(err.message));
   } finally {
     restoreSave();
   }

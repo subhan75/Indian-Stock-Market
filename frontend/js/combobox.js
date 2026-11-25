@@ -29,7 +29,7 @@ export function initCombobox({ form = null, input, list, hint = null, onSelect =
   function choose(stock) {
     closeList();
     if (onSelect) onSelect(stock);
-    else window.location.href = reportUrl(stock.symbol);
+    else window.location.href = reportUrl(stock.symbol, "search");
   }
 
   function setActive(i) {
@@ -113,4 +113,7 @@ export function initCombobox({ form = null, input, list, hint = null, onSelect =
       if (options.length) choose(options[0]);
     });
   }
+
+  // Lets a page start a search itself (for example from ?q=abb in the address).
+  return { run(q) { input.value = q; lookup(q); } };
 }

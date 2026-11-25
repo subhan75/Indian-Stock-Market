@@ -84,20 +84,22 @@ dialog h2 { margin: 0 0 var(--space-4); font-size: 18px; }
   .actions .btn, .actions .btn-secondary { flex: 1; }
   .table-wrap { background: none; border: 0; border-radius: 0; overflow: visible; }
   table.holdings, .holdings tbody, .holdings tr, .holdings td { display: block; width: 100%; }
-  .holdings thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .holdings thead { display: none; }
+  .holdings td .cell-label { display: block; flex: none; font-size: 12px; font-weight: 600; color: var(--ink-3); text-align: left; padding-top: 2px; }
   .holdings tr { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; margin-bottom: var(--space-3); padding: var(--space-2) var(--space-4); }
   .holdings td { display: flex; justify-content: space-between; gap: var(--space-4); padding: var(--space-3) 0; border-top: 1px solid var(--line); text-align: right; }
   .holdings tbody tr:first-child td, .holdings td:first-child { border-top: 0; }
-  .holdings td::before { content: attr(data-label); flex: none; font-size: 12px; font-weight: 600; color: var(--ink-3); text-align: left; padding-top: 2px; }
   .holdings td.cell-stock { display: block; text-align: left; }
-  .holdings td.cell-stock::before { display: none; }
+  .holdings td.cell-stock .cell-label, .holdings td.cell-actions .cell-label { display: none; }
   .holdings td > div { min-width: 0; }
   .holdings .reasons { text-align: right; }
   .holdings .row-actions { justify-content: flex-end; }
-  .holdings td.cell-actions::before { display: none; }
   dialog { padding: var(--space-4); }
   .dialog-actions { flex-direction: column-reverse; }
   .dialog-actions .btn, .dialog-actions .btn-secondary { width: 100%; }
 }
 
 .status-busy { display: flex; align-items: center; }
+
+/* The label of each value is a real element (read out by screen readers); it only shows in the card layout */
+.holdings .cell-label { display: none; }

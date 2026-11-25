@@ -1,9 +1,9 @@
 import { getMarket } from "./api.js";
 import { labelPill, plainPill } from "./labels.js";
 import { loadingNote } from "./loading.js";
-import { arrowIcon, el, externalLink, reportLink } from "./ui.js";
+import { announce, arrowIcon, el, externalLink, reportLink } from "./ui.js";
 
-const root = document.getElementById("market");
+const root = document.getElementById("main");
 
 // "Shares rose [H2]." -> text with a clickable chip (linking to that headline) in place of each [H2]
 function citedText(text, headlines) {
@@ -119,7 +119,7 @@ function renderYourStocks(m) {
   for (const r of m.your_stocks_in_news) {
     const row = el("div", "stock-row");
     const left = el("div", "name");
-    left.append(reportLink(r.report_url, r.name), el("span", "sym", `NSE: ${r.symbol}`));
+    left.append(reportLink(`${r.report_url}&from=market`, r.name), el("span", "sym", `NSE: ${r.symbol}`));
     const what = el("div", "what");
     what.append(el("span", "meta", `${r.outlet} · ${r.time_display}${r.headline_id ? ` · ${r.headline_id}` : ""}`),
                 externalLink(r.url, r.title, "title"));
@@ -137,7 +137,7 @@ function renderWatching(m) {
   for (const w of m.watching) {
     const row = el("div", "stock-row");
     const left = el("div", "name");
-    left.append(reportLink(w.report_url, w.name), el("span", "sym", `NSE: ${w.symbol}`));
+    left.append(reportLink(`${w.report_url}&from=market`, w.name), el("span", "sym", `NSE: ${w.symbol}`));
     const right = el("div", "what");
     right.append(w.label ? labelPill(w.label.code) : plainPill("No report yet"));
     row.append(left, right);
@@ -201,9 +201,11 @@ async function load(refresh) {
     root.replaceChildren(renderHead(m), renderIndices(m), renderPoints(m), renderHeadlines(m),
                          renderYourStocks(m), renderWatching(m), renderSources(m));
     root.setAttribute("aria-busy", "false");
-    root.querySelector("h1")?.focus();
+    announce("Market today is ready.");
+    if (refresh) root.querySelector("h1")?.focus();   // the Refresh button is gone; a normal load keeps focus at the top
   } catch (err) {
     showError(err.message);
+    announce(`We couldn't load the market page. ${err.message}`);
   }
 }
 

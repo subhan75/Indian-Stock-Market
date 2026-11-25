@@ -2,7 +2,7 @@ import { getReport } from "./api.js";
 import { initCombobox } from "./combobox.js";
 import { labelPill, statusPill } from "./labels.js";
 import { loadingNote } from "./loading.js";
-import { arrowIcon, el, externalLink } from "./ui.js";
+import { announce, arrowIcon, el, externalLink } from "./ui.js";
 
 initCombobox({
   form: document.getElementById("search-form"),
@@ -11,8 +11,30 @@ initCombobox({
   hint: document.getElementById("hint"),
 });
 
-const root = document.getElementById("report");
-const symbol = (new URLSearchParams(location.search).get("symbol") || "").trim().toUpperCase();
+const root = document.getElementById("main");
+const params = new URLSearchParams(location.search);
+const symbol = (params.get("symbol") || "").trim().toUpperCase();
+
+// "Back" goes to where this report was opened from, and to the same place the browser's own Back button would.
+const FROM = { search: ["/", "Search"], holdings: ["/holdings.html", "My stocks"], market: ["/market.html", "Market today"] };
+
+function backLink() {
+  const [href, label] = FROM[params.get("from")] || FROM.search;
+  const link = el("a", "back-link");
+  const arrow = el("span", null, "←");
+  arrow.setAttribute("aria-hidden", "true");
+  link.href = href;
+  link.append(arrow, `Back to ${label}`);
+  link.addEventListener("click", (event) => {
+    try {
+      if (history.length > 1 && document.referrer && new URL(document.referrer).pathname === href) {
+        event.preventDefault();
+        history.back();                 // restores the page as you left it (scroll position, search text)
+      }
+    } catch { /* an unreadable referrer: follow the plain link */ }
+  });
+  return link;
+}
 
 // ---------------------------------------------------------------- small DOM helpers
 function chip(id, report) {
@@ -21,7 +43,7 @@ function chip(id, report) {
   const url = fact?.url ?? item?.url;
   const a = externalLink(url, id, "cite");
   a.title = fact ? `${fact.label} (${fact.source})` : item ? `${item.outlet}: ${item.title}` : id;
-  if (a.tagName === "A") a.setAttribute("aria-label", `Source ${id}: ${a.title}`);
+  if (a.tagName === "A") a.setAttribute("aria-label", `Source ${id}: ${a.title} (opens in a new tab)`);
   return a;
 }
 
@@ -145,7 +167,10 @@ function renderFacts(r) {
   details.append(el("summary", null, "All numbers and where they came from"));
   const table = el("table", "facts");
   const head = el("tr");
-  ["", "What", "Value", "As of", "Source"].forEach((h) => head.append(el("th", null, h)));
+  ["Reference", "What", "Value", "As of", "Source"].forEach((h, i) => {
+    const th = el("th", i === 0 ? "sr-only-cell" : null, h);
+    head.append(th);
+  });
   table.append(head);
   for (const f of r.facts) {
     const tr = el("tr");
@@ -199,7 +224,7 @@ function showLoading(label) {
   const note = loadingNote(label);
   stopLoading = note.stop;
   document.title = `${symbol} report | Stock Analyst`;
-  root.replaceChildren(heading, note.node, el("div", "skeleton sk-card"), el("div", "skeleton sk-card"),
+  root.replaceChildren(backLink(), heading, note.node, el("div", "skeleton sk-card"), el("div", "skeleton sk-card"),
                        el("div", "skeleton sk-card"));
 }
 
@@ -216,13 +241,13 @@ function showError(message) {
   back.href = "/";
   actions.append(retry, back);
   card.append(actions);
-  root.replaceChildren(card);
+  root.replaceChildren(backLink(), card);
 }
 
 function showReport(r) {
   stopLoading();
   document.title = `${r.name} (${r.symbol}) | Stock Analyst`;
-  const parts = [renderHeader(r), renderOverall(r), renderAbout(r), renderQuestions(r), renderNews(r),
+  const parts = [backLink(), renderHeader(r), renderOverall(r), renderAbout(r), renderQuestions(r), renderNews(r),
                  renderFacts(r), renderFooter(r, (btn) => refresh(btn))].filter(Boolean);
   root.replaceChildren(...parts);
   root.setAttribute("aria-busy", "false");
@@ -234,10 +259,15 @@ async function load(refreshNow) {
     ? "Fetching fresh numbers and news. This can take up to a minute."
     : "Getting the report. A new one can take up to a minute.");
   try {
-    showReport(await getReport(symbol, refreshNow));
-    root.querySelector("h1")?.focus();
+    const report = await getReport(symbol, refreshNow);
+    showReport(report);
+    announce(`${report.name} report is ready.`);
+    // After a click on Refresh the button is gone, so put focus on the heading. On a normal page load focus stays at the
+    // top of the page, so the first Tab still reaches the skip link.
+    if (refreshNow) root.querySelector("h1")?.focus();
   } catch (err) {
     showError(err.message);
+    announce(`We couldn't open this report. ${err.message}`);
   }
 }
 

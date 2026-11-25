@@ -1,6 +1,6 @@
 .topbar-split { justify-content: space-between; gap: var(--space-4); }
 .mini-search { width: min(240px, 50%); }
-.mini-search input { height: 40px; font-size: 14px; }
+.mini-search input { height: 44px; font-size: 16px; }
 
 /* Cards */
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: var(--space-5); margin-top: var(--space-4); }
@@ -99,3 +99,5 @@ details.card summary { cursor: pointer; font-weight: 600; font-size: 15px; }
 /* Headline shown while a page's data loads, so the page always has an h1 */
 .load-title { margin: var(--space-5) 0 var(--space-1); font-size: clamp(24px, 5vw, 32px); line-height: 1.15; letter-spacing: -0.02em; }
 .load-title:focus { outline: none; }
+
+.facts th.sr-only-cell { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; padding: 0; border: 0; }

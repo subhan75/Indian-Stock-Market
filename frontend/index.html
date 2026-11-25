@@ -19,6 +19,7 @@
   <link rel="stylesheet" href="/css/mobile.css">
 </head>
 <body>
+  <a class="skip-link" href="#main">Skip to main content</a>
   <div class="wrap">
     <header class="topbar">
       <a class="brand" href="/"><span class="brand-mark" aria-hidden="true">SA</span> Stock Analyst</a>
@@ -29,9 +30,9 @@
       <a href="/market.html">Market today</a>
     </nav>
 
-    <main>
+    <main id="main" tabindex="-1">
       <section class="hero">
-        <h1>Research a stock</h1>
+        <h1 tabindex="-1">Research a stock</h1>
         <p>Get a plain-words report: five health questions, the latest news and the numbers behind them, with every fact linked to its source.</p>
 
         <form id="search-form" role="search" autocomplete="off">

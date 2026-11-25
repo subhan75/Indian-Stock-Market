@@ -30,11 +30,26 @@ export function externalLink(url, text, className) {
 
 // Links to our own pages. Only the report page is ever linked from a list.
 export function reportLink(path, text, className) {
-  const ok = typeof path === "string" && /^\/report\.html\?symbol=[A-Za-z0-9&%\-]+$/.test(path);
+  const ok = typeof path === "string" && /^\/report\.html\?symbol=[A-Za-z0-9&%\-]+(&from=(search|holdings|market))?$/.test(path);
   if (!ok) return el("span", className, text);
   const a = el("a", className, text);
   a.href = path;
   return a;
+}
+
+// Tell screen-reader users something has happened without moving their focus. Clearing first means the same
+// message is still read out if it is announced twice.
+export function announce(message) {
+  let region = document.getElementById("announcer");
+  if (!region) {
+    region = el("div", "sr-only");
+    region.id = "announcer";
+    region.setAttribute("role", "status");
+    region.setAttribute("aria-live", "polite");
+    document.body.append(region);
+  }
+  region.textContent = "";
+  setTimeout(() => { region.textContent = message; }, 60);
 }
 
 const ARROWS = {

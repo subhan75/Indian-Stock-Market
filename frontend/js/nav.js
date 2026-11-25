@@ -28,9 +28,11 @@ document.querySelectorAll(".nav a").forEach((a) => {
 });
 
 const here = location.pathname === "/" ? "/index.html" : location.pathname;
+// A report belongs to the place you opened it from.
+const reportOwner = { holdings: "/holdings.html", market: "/market.html" }[new URLSearchParams(location.search).get("from")] || "/index.html";
 document.querySelectorAll(".nav a").forEach((a) => {
   const target = a.getAttribute("href") === "/" ? "/index.html" : a.getAttribute("href");
-  if (target === here || (target === "/index.html" && here === "/report.html")) a.setAttribute("aria-current", "page");
+  if (target === (here === "/report.html" ? reportOwner : here)) a.setAttribute("aria-current", "page");
 });
 
 function userMenu(email) {

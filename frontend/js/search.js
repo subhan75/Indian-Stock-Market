@@ -3,11 +3,20 @@ import { initCombobox } from "./combobox.js";
 import { labelPill } from "./labels.js";
 import { loadingNote } from "./loading.js";
 
-initCombobox({
+const searchInput = document.getElementById("q");
+const combo = initCombobox({
   form: document.getElementById("search-form"),
-  input: document.getElementById("q"),
+  input: searchInput,
   list: document.getElementById("suggestions"),
   hint: document.getElementById("hint"),
+});
+
+// What you typed lives in the address (?q=abb), so the browser Back button from a report brings the search back.
+const startQuery = new URLSearchParams(location.search).get("q");
+if (startQuery) combo.run(startQuery);
+searchInput.addEventListener("input", () => {
+  const q = searchInput.value.trim();
+  history.replaceState(null, "", q ? `?q=${encodeURIComponent(q)}` : location.pathname);
 });
 
 const recentEl = document.getElementById("recent-list");
@@ -40,7 +49,7 @@ async function loadRecent() {
     for (const r of rows) {
       const li = document.createElement("li");
       const a = document.createElement("a");
-      a.href = reportUrl(r.symbol);
+      a.href = reportUrl(r.symbol, "search");
       const left = document.createElement("div");
       const name = document.createElement("div");
       name.className = "recent-name";

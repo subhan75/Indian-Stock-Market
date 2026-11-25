@@ -54,7 +54,8 @@ export const searchStocks = (q) => api(`/api/stocks/search?q=${enc(q)}`);
 export const recentReports = () => api("/api/reports/recent");
 export const getReport = (symbol, refresh = false) =>
   api(`/api/reports/${enc(symbol)}${refresh ? "?refresh=true" : ""}`);
-export const reportUrl = (symbol) => `/report.html?symbol=${enc(symbol)}`;
+// `from` is where the person came from, so the report can offer a Back link to the right place.
+export const reportUrl = (symbol, from = "search") => `/report.html?symbol=${enc(symbol)}&from=${from}`;
 
 // My stocks
 export const getHoldings = () => api("/api/holdings");
