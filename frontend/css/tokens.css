@@ -1,0 +1,28 @@
+/* Design tokens, taken from the Phase 1 mockups. Never use raw hex outside this file. */
+:root {
+  --bg: #f6f6f2;
+  --surface: #ffffff;
+  --ink: #14141a;
+  --ink-2: #4a4d57;       /* secondary text, 7.9:1 on --bg */
+  --ink-3: #5f636d;       /* tertiary text, 5.6:1 on --bg */
+  --line: #e4e4dd;
+  --line-strong: #cfcfc6;
+  --primary: #14141a;
+  --on-primary: #ffffff;
+  --focus: #2b5bd7;
+
+  /* Status colours. Always paired with an icon and a text label, never colour alone. */
+  --green: #17653a;   --green-bg: #e3f3e9;
+  --amber: #8a5300;   --amber-bg: #fdf0d6;
+  --red: #a3341b;     --red-bg: #fbe5df;
+  --grey: #55596a;    --grey-bg: #ebebe6;
+
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+
+  --radius: 10px;
+  --radius-pill: 999px;
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
+  --space-5: 24px; --space-6: 32px; --space-7: 48px;
+  --measure: 680px;
+}
