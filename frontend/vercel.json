@@ -5,7 +5,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://REPLACE-WITH-YOUR-RAILWAY-DOMAIN/api/:path*"
+      "destination": "https://indian-stock-market-production.up.railway.app/api/:path*"
     }
   ],
   "headers": [
