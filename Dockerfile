@@ -19,6 +19,7 @@ COPY frontend ./frontend
 RUN useradd --create-home appuser
 USER appuser
 
-# Railway sets $PORT. "::" listens on IPv6 and IPv4 (as in Railway's own FastAPI guide).
+# Railway sets $PORT. 0.0.0.0 (IPv4) is what Railway's public edge reaches; an IPv6-only "::" listener gave
+# "Application failed to respond" even though the app started.
 # --proxy-headers lets the app see the real client address and https when it sits behind Vercel/Railway.
-CMD ["sh", "-c", "exec uvicorn backend.app.main:app --host :: --port ${PORT:-8000} --proxy-headers --forwarded-allow-ips='*'"]
+CMD ["sh", "-c", "exec uvicorn backend.app.main:app --host 0.0.0.0 --port ${PORT:-8000} --proxy-headers --forwarded-allow-ips='*'"]

@@ -76,7 +76,7 @@ def test_the_placeholder_backend_address_is_called_out(vercel):
 # ------------------------------------------------------------------ Dockerfile and .dockerignore
 def test_the_image_runs_as_a_normal_user_on_the_port_the_host_provides():
     docker = read("Dockerfile")
-    assert "USER appuser" in docker and "${PORT" in docker and "--host ::" in docker
+    assert "USER appuser" in docker and "${PORT" in docker and "--host 0.0.0.0" in docker
     assert "backend.app.main:app" in docker and "--proxy-headers" in docker
     assert "COPY requirements.txt" in docker and "COPY backend" in docker
     assert ".env" not in docker

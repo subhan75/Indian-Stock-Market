@@ -65,7 +65,7 @@ You have a premium plan, so the service stays awake.
 
 > **Unknowns I could not test from here, so please watch the first deploy:** (1) the image build itself (Docker wasn't
 > running on my machine), (2) whether the app can reach Screener.in, Yahoo, Google News and NSE from Railway's network
-> (some sites block data-centre addresses), and (3) the `--host ::` listener. Open a report for ABB on the deployed site
+> (some sites block data-centre addresses), and (3) the listener address (`--host 0.0.0.0`; an IPv6-only `::` listener gave 502 "Application failed to respond"). Open a report for ABB on the deployed site
 > and read the sources footer: it names any source that failed.
 
 ---
