@@ -21,10 +21,22 @@
   --red: #a3341b;     --red-bg: #fbe5df;
   --grey: #55596a;    --grey-bg: #ebebe6;
 
+  /* Dark "night" surfaces (navigation band, overall verdict, key figure, tab bar). Text on them is 9:1 or better. */
+  --night: #14141a;
+  --night-2: #1f2028;
+  --night-line: #2d2f3a;
+  --on-night: #f2f2ee;
+  --on-night-2: #b8bbc6;
+  --accent-night: #8fb0ff;       /* active-tab underline and focus ring on dark surfaces */
+
+  --shadow-1: 0 1px 2px rgb(20 20 26 / .04), 0 4px 16px rgb(20 20 26 / .05);
+  --grid-line: rgb(20 20 26 / .045);
+
   --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
 
   --radius: 10px;
+  --radius-lg: 16px;
   --radius-pill: 999px;
   --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
   --space-5: 24px; --space-6: 32px; --space-7: 48px;

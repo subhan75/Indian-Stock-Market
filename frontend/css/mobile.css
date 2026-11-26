@@ -33,14 +33,15 @@ details > summary { display: flex; align-items: center; min-height: 44px; }
   .nav {
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
     display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; margin: 0;
-    background: var(--surface); border-top: 1px solid var(--line); border-bottom: 0;
+    background: var(--night); border-top: 1px solid var(--night-line); border-bottom: 0;
     padding: 0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   }
+  .nav::before { display: none; }         /* the full-width band is only for the desktop top menu */
   .nav a {
     flex-direction: column; justify-content: center; gap: 2px; min-height: 60px; padding: 6px 4px; margin: 0;
     border-bottom: 0; border-top: 3px solid transparent; font-size: 12px; text-align: center;
   }
-  .nav a[aria-current="page"] { border-top-color: var(--ink); }
+  .nav a[aria-current="page"] { border-top-color: var(--accent-night); }
   .nav-icon { display: block; width: 24px; height: 24px; }
 
   /* A crowded top bar: keep only what is needed */

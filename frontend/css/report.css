@@ -3,7 +3,7 @@
 .mini-search input { height: 44px; font-size: 16px; }
 
 /* Cards */
-.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: var(--space-5); margin-top: var(--space-4); }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: var(--space-5); margin-top: var(--space-4); box-shadow: var(--shadow-1); }
 .card > h2 { margin: 0 0 var(--space-3); font-size: 15px; letter-spacing: -0.005em; }
 .card p { margin: 0; }
 .muted { color: var(--ink-3); font-size: 13px; }
@@ -21,8 +21,11 @@
 .price-change svg { width: 10px; height: 10px; }
 .asof { margin-top: 2px; font-size: 12px; color: var(--ink-3); }
 
-/* Overall */
-.overall { border: 1.5px solid var(--ink); }
+/* Overall: a dark card, so the verdict is the first thing you see */
+.overall { background: var(--night); border-color: var(--night); color: var(--on-night); }
+.overall h2 { color: var(--on-primary); }
+.overall .muted { color: var(--on-night-2); }
+.overall :focus-visible { outline-color: var(--accent-night); }
 .overall-top { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-3); flex-wrap: wrap; }
 .overall .pill { font-size: 15px; padding: 6px 14px; }
 .overall .pill svg { width: 14px; height: 14px; }

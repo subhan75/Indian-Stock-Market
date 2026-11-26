@@ -19,8 +19,12 @@
 
 /* Totals */
 .totals { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-3); margin: var(--space-4) 0; }
-.total { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: var(--space-4) var(--space-5); }
+.total { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: var(--space-4) var(--space-5); box-shadow: var(--shadow-1); }
 .total .k { font-size: 13px; color: var(--ink-3); }
+/* "Value today" is the key figure, so it is the dark one */
+.totals .total:nth-child(2) { background: var(--night); border-color: var(--night); }
+.totals .total:nth-child(2) .k { color: var(--on-night-2); }
+.totals .total:nth-child(2) .v { color: var(--on-primary); }
 .total .v { margin-top: 2px; font: 600 clamp(18px, 3.4vw, 24px)/1.2 var(--font-mono); letter-spacing: -0.02em; }
 .totals .note { grid-column: 1 / -1; margin: 0; font-size: 13px; color: var(--ink-3); }
 

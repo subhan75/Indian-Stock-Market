@@ -32,6 +32,7 @@
 
     <main id="main" tabindex="-1">
       <section class="hero">
+        <div class="eyebrow"><span class="dot" aria-hidden="true"></span>NSE-listed companies, in plain words</div>
         <h1 tabindex="-1">Research a stock</h1>
         <p>Get a plain-words report: five health questions, the latest news and the numbers behind them, with every fact linked to its source.</p>
 
@@ -39,6 +40,7 @@
           <div class="search-row">
             <div class="combo">
               <label class="sr-only" for="q">NSE symbol or company name</label>
+              <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>
               <input id="q" type="text" placeholder="NSE symbol or company name, e.g. ABB"
                      role="combobox" aria-expanded="false" aria-controls="suggestions" aria-autocomplete="list"
                      spellcheck="false" autocapitalize="off" maxlength="80">
@@ -49,6 +51,12 @@
           <p id="hint" class="hint" role="status" aria-live="polite"></p>
         </form>
       </section>
+
+      <ol class="steps" aria-label="How it works">
+        <li><strong>Search</strong><span>Type a symbol or company name.</span></li>
+        <li><strong>Read five answers</strong><span>Growth, efficiency, debt, price and news.</span></li>
+        <li><strong>Check the source</strong><span>Each fact links to where it came from.</span></li>
+      </ol>
 
       <section class="recent" aria-labelledby="recent-title">
         <div class="recent-head">
