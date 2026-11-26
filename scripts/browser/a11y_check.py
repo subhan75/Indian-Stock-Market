@@ -77,6 +77,9 @@ with sync_playwright() as p:
     page.keyboard.press("Tab"); page.keyboard.press("Enter")
     page.wait_for_url(BASE + "/")
     check(True, "login: signed in with the keyboard alone")
+    # a fresh server has no stocks, and the My stocks checks below need a row to look at
+    for body in ({"symbol": "ABB", "shares": 10, "buy_price": 10000}, {"symbol": "TITAN", "watching": True}):
+        ctx.request.post(BASE + "/api/holdings", data=body, headers={"Origin": BASE})
 
     # ---------------- every page: skip link first, visible focus everywhere, no trap
     for name, path, ready in (("search", "/", "#recent-list li"), ("report", "/report.html?symbol=ABB", ".q-row"),
