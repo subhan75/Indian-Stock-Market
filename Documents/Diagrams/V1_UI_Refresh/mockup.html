@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stock Analyst: UI refresh mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Same tokens as frontend/css/tokens.css, plus three new ones marked NEW. */
+:root {
+  --bg:#f6f6f2; --surface:#fff; --ink:#14141a; --ink-2:#4a4d57; --ink-3:#5f636d;
+  --line:#e4e4dd; --line-strong:#cfcfc6; --primary:#14141a; --on-primary:#fff; --focus:#2b5bd7;
+  --cite-bg:#e8eefc;
+  --green:#17653a; --green-bg:#e3f3e9; --amber:#8a5300; --amber-bg:#fdf0d6; --red:#a3341b; --red-bg:#fbe5df; --grey:#55596a; --grey-bg:#ebebe6;
+  --font-sans:"Inter",system-ui,sans-serif; --font-mono:"JetBrains Mono",ui-monospace,monospace;
+  --radius:10px; --radius-lg:16px;                         /* NEW: larger radius for cards */
+  --shadow-1:0 1px 2px rgb(20 20 26 / .04), 0 4px 16px rgb(20 20 26 / .05);   /* NEW: one soft shadow, used on cards only */
+  --grid-line:rgb(20 20 26 / .045);                         /* NEW: faint hairline grid behind the hero */
+}
+*{box-sizing:border-box} html{scroll-behavior:smooth}
+body{margin:0;background:#e9e9e3;color:var(--ink);font:400 16px/1.5 var(--font-sans);-webkit-font-smoothing:antialiased}
+svg{display:block;flex:none}
+
+/* ---------- the sheet this page is presented on (not part of the app) ---------- */
+.sheet{max-width:1080px;margin:0 auto;padding:32px 16px 80px}
+.sheet h1{font-size:28px;letter-spacing:-.02em;margin:0 0 6px}
+.sheet .lede{color:var(--ink-2);margin:0 0 28px;max-width:70ch}
+.sheet h2{font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);margin:44px 0 6px}
+.sheet .note{margin:0 0 14px;color:var(--ink-2);font-size:14px;max-width:80ch}
+.changes{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px;padding:0;list-style:none}
+.changes li{font-size:12px;font-weight:600;background:#fff;border:1px solid var(--line-strong);border-radius:99px;padding:3px 10px;color:var(--ink-2)}
+.changes li::before{content:"+ ";color:var(--focus)}
+.browser{background:var(--bg);border:1px solid var(--line-strong);border-radius:14px;overflow:hidden;box-shadow:0 10px 40px rgb(20 20 26 / .10)}
+.browser-bar{display:flex;align-items:center;gap:8px;padding:10px 14px;background:#ecece6;border-bottom:1px solid var(--line-strong)}
+.browser-bar i{width:10px;height:10px;border-radius:50%;background:#cfcfc6}
+.browser-bar span{margin-left:10px;font:12px var(--font-mono);color:var(--ink-3)}
+.phones{display:flex;flex-wrap:wrap;gap:28px;justify-content:center}
+.phone{width:340px;border:1px solid var(--line-strong);border-radius:34px;background:var(--bg);overflow:hidden;box-shadow:0 10px 40px rgb(20 20 26 / .10);position:relative}
+.phone-in{padding:0 16px 8px;min-height:640px}
+
+/* ---------- the app, as redesigned ---------- */
+.wrap{max-width:720px;margin:0 auto;padding:0 20px}
+.topbar{display:flex;align-items:center;gap:12px;padding:16px 0}
+.brand{display:inline-flex;align-items:center;gap:10px;font-weight:600;font-size:15px;letter-spacing:-.01em}
+.brand-mark{display:grid;place-items:center;width:30px;height:30px;border-radius:9px;background:var(--primary);color:#fff;font-size:11px;font-weight:700;letter-spacing:.02em;box-shadow:inset 0 -6px 10px rgb(255 255 255 / .06)}
+.user{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:13px;color:var(--ink-3)}
+.avatar{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--surface);border:1px solid var(--line-strong);color:var(--ink);font-weight:600;font-size:12px}
+.user a{color:var(--ink-2);font-weight:600;text-underline-offset:3px}
+.nav{display:flex;gap:4px;border-bottom:1px solid var(--line)}
+.nav a{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 14px;color:var(--ink-2);font-size:14px;font-weight:500;border-bottom:2px solid transparent;margin-bottom:-1px;text-decoration:none}
+.nav a svg{width:16px;height:16px}
+.nav a[aria-current]{color:var(--ink);font-weight:600;border-bottom-color:var(--ink)}
+
+/* hero with a faint grid that fades out */
+.hero{position:relative;padding:56px 0 28px;text-align:left}
+.hero::before{content:"";position:absolute;inset:0 -20px auto -20px;height:260px;z-index:0;pointer-events:none;
+  background-image:linear-gradient(var(--grid-line) 1px,transparent 1px),linear-gradient(90deg,var(--grid-line) 1px,transparent 1px);
+  background-size:32px 32px;-webkit-mask-image:linear-gradient(#000 20%,transparent);mask-image:linear-gradient(#000 20%,transparent)}
+.hero>*{position:relative;z-index:1}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;padding:4px 12px 4px 8px;border:1px solid var(--line-strong);background:rgb(255 255 255 / .7);border-radius:99px;font-size:12px;font-weight:600;color:var(--ink-2);margin-bottom:18px}
+.eyebrow .dot{width:8px;height:8px;border-radius:50%;background:var(--green)}
+.hero h1{margin:0 0 12px;font-size:clamp(32px,6vw,44px);line-height:1.08;letter-spacing:-.03em}
+.hero h1 em{font-style:normal;background:linear-gradient(transparent 62%,var(--cite-bg) 62%)}
+.hero p{margin:0 0 24px;color:var(--ink-2);max-width:54ch}
+.search{display:flex;gap:10px}
+.field{position:relative;flex:1;min-width:0}
+.field svg.lead{position:absolute;left:14px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:var(--ink-3)}
+.field input{width:100%;height:52px;padding:0 54px 0 44px;font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line-strong);border-radius:12px;box-shadow:var(--shadow-1)}
+.field kbd{position:absolute;right:12px;top:50%;transform:translateY(-50%);font:500 12px var(--font-mono);color:var(--ink-3);border:1px solid var(--line-strong);border-bottom-width:2px;border-radius:6px;padding:1px 7px;background:var(--bg)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:52px;padding:0 24px;font:600 15px var(--font-sans);color:#fff;background:var(--primary);border:0;border-radius:12px}
+.btn svg{width:16px;height:16px}
+.try{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:14px;font-size:13px;color:var(--ink-3)}
+.try b{font:500 12px var(--font-mono);color:var(--ink-2);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:5px 10px}
+.suggest{margin-top:6px;padding:4px;background:var(--surface);border:1px solid var(--line-strong);border-radius:12px;box-shadow:0 12px 32px rgb(20 20 26 / .10)}
+.suggest div{display:flex;justify-content:space-between;align-items:center;min-height:44px;padding:0 12px;border-radius:8px;font-size:15px}
+.suggest div[aria-selected]{background:var(--bg)}
+.suggest span{font:12px var(--font-mono);color:var(--ink-3)}
+.suggest mark{background:none;font-weight:700}
+
+/* how it works */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:8px 0 0;padding:0;list-style:none}
+.steps li{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);padding:16px}
+.steps .n{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--bg);border:1px solid var(--line-strong);font:600 11px var(--font-mono);margin-bottom:10px}
+.steps b{display:block;font-size:14px;margin-bottom:2px}
+.steps p{margin:0;font-size:13px;color:var(--ink-2)}
+
+/* section headers & lists */
+.sec{display:flex;justify-content:space-between;align-items:baseline;margin:36px 0 10px}
+.sec h2{margin:0;font-size:16px;letter-spacing:-.01em}
+.sec span{font-size:13px;color:var(--ink-3)}
+.cards{display:grid;gap:10px;margin:0;padding:0;list-style:none}
+.row{display:flex;align-items:center;gap:14px;min-height:64px;padding:12px 16px;background:var(--surface);border:1px solid var(--line);border-radius:14px;text-decoration:none}
+.tile{display:grid;place-items:center;width:40px;height:40px;border-radius:11px;background:var(--bg);border:1px solid var(--line);font:600 11px var(--font-mono);color:var(--ink-2);flex:none}
+.row .t{flex:1;min-width:0}
+.row .t b{display:block;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .t span{font-size:12px;color:var(--ink-3)}
+.chev{width:16px;height:16px;color:var(--ink-3)}
+
+.pill{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:600;white-space:nowrap}
+.pill svg{width:12px;height:12px}
+.green{color:var(--green);background:var(--green-bg)} .amber{color:var(--amber);background:var(--amber-bg)}
+.red{color:var(--red);background:var(--red-bg)} .grey{color:var(--grey);background:var(--grey-bg)}
+
+/* report */
+.back{display:inline-flex;align-items:center;gap:6px;min-height:44px;font-size:14px;font-weight:500;color:var(--ink-2);text-decoration:none}
+.back svg{width:16px;height:16px}
+.head{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:16px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);padding:20px;box-shadow:var(--shadow-1)}
+.head h1{margin:0;font-size:24px;letter-spacing:-.02em;line-height:1.2}
+.head .sub{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:6px;font-size:13px;color:var(--ink-3)}
+.head .sub .sym{font:500 12px var(--font-mono);color:var(--ink-2);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:1px 7px}
+.verdict{text-align:right}
+.verdict .pill{font-size:14px;padding:6px 14px}
+.meter{display:flex;gap:4px;justify-content:flex-end;margin-top:10px}
+.meter i{width:26px;height:6px;border-radius:99px;background:var(--line-strong)}
+.meter i.g{background:var(--green)} .meter i.a{background:#c98a14} .meter i.r{background:var(--red)}
+.verdict small{display:block;margin-top:6px;font-size:12px;color:var(--ink-3)}
+.summary{margin:14px 0 0;padding:16px 18px;border-left:3px solid var(--ink);background:var(--surface);border-radius:0 12px 12px 0;color:var(--ink-2);font-size:15px}
+.summary b{color:var(--ink)}
+.cite{display:inline-grid;place-items:center;min-width:22px;height:18px;padding:0 5px;margin:0 1px;border-radius:5px;background:var(--cite-bg);color:var(--focus);font:600 10px var(--font-mono);vertical-align:1px}
+.q{display:grid;grid-template-columns:44px 1fr auto;gap:14px;align-items:start;padding:16px;background:var(--surface);border:1px solid var(--line);border-radius:14px}
+.q .ico{display:grid;place-items:center;width:44px;height:44px;border-radius:12px}
+.q .ico svg{width:22px;height:22px}
+.q h3{margin:0 0 2px;font-size:15px;letter-spacing:-.01em}
+.q p{margin:0;font-size:14px;color:var(--ink-2)}
+.q .fig{font:500 13px var(--font-mono);color:var(--ink);text-align:right}
+.q .fig small{display:block;font:400 11px var(--font-sans);color:var(--ink-3);margin-top:2px}
+.news{display:grid;gap:0;margin:0;padding:0;list-style:none;background:var(--surface);border:1px solid var(--line);border-radius:14px}
+.news li{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--line);font-size:14px}
+.news li:last-child{border-bottom:0}
+.news small{display:block;color:var(--ink-3);font-size:12px;margin-top:2px}
+.foot{margin:40px 0 24px;padding-top:16px;border-top:1px solid var(--line);font-size:13px;color:var(--ink-3);display:flex;gap:8px;align-items:center}
+.foot svg{width:14px;height:14px}
+
+/* my stocks */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.stat small{display:block;font-size:12px;color:var(--ink-3)}
+.stat b{display:block;font-size:22px;letter-spacing:-.02em;margin-top:2px}
+.stat b.up{color:var(--green)}
+.hold{display:grid;grid-template-columns:40px 1fr auto auto;gap:14px;align-items:center;padding:14px 16px;background:var(--surface);border:1px solid var(--line);border-radius:14px}
+.hold .num{text-align:right;font:500 14px var(--font-mono)}
+.hold .num small{display:block;font:400 12px var(--font-sans);color:var(--ink-3)}
+.flag{display:flex;gap:8px;align-items:center;margin-top:6px;font-size:12px;font-weight:600;color:var(--amber)}
+.flag svg{width:14px;height:14px}
+
+/* login */
+.login{min-height:560px;display:grid;place-items:center;padding:40px 16px;background:
+  radial-gradient(600px 300px at 50% 0,rgb(43 91 215 / .06),transparent 70%),var(--bg)}
+.card{width:100%;max-width:400px;background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:32px;box-shadow:var(--shadow-1)}
+.card .brand{margin-bottom:22px}
+.card h1{margin:0 0 4px;font-size:24px;letter-spacing:-.02em}
+.card p{margin:0 0 22px;color:var(--ink-2);font-size:14px}
+.card label{display:block;font-size:13px;font-weight:600;margin:14px 0 6px}
+.card .in{display:flex;align-items:center;height:48px;padding:0 14px;border:1px solid var(--line-strong);border-radius:11px;color:var(--ink-3);font-size:15px;gap:10px}
+.card .in svg{width:18px;height:18px}
+.card .in a{margin-left:auto;font-size:13px;font-weight:600;color:var(--ink-2)}
+.card .btn{width:100%;margin-top:22px}
+.secure{display:flex;justify-content:center;align-items:center;gap:8px;margin-top:18px;font-size:12px;color:var(--ink-3)}
+.secure svg{width:14px;height:14px}
+
+/* checking-session splash: the fix for the flash-then-redirect */
+.splash{min-height:420px;display:grid;place-items:center;text-align:center;background:var(--bg)}
+.splash .brand-mark{width:48px;height:48px;border-radius:14px;font-size:15px;margin:0 auto 18px;animation:breathe 1.8s ease-in-out infinite}
+.splash p{margin:0;font-size:14px;color:var(--ink-2)}
+.splash small{display:block;margin-top:4px;color:var(--ink-3);font-size:12px}
+.bar{width:120px;height:3px;border-radius:99px;background:var(--line);margin:18px auto 0;overflow:hidden}
+.bar i{display:block;width:40%;height:100%;background:var(--ink);border-radius:99px;animation:slide 1.2s ease-in-out infinite}
+@keyframes breathe{50%{transform:scale(.94);opacity:.85}} @keyframes slide{from{transform:translateX(-100%)}to{transform:translateX(300%)}}
+@media (prefers-reduced-motion:reduce){.splash .brand-mark,.bar i{animation:none}}
+
+/* phone tab bar */
+.tabs{position:sticky;bottom:0;display:grid;grid-template-columns:repeat(3,1fr);margin:0 -16px;padding:6px 8px 14px;background:rgb(255 255 255 / .92);border-top:1px solid var(--line)}
+.tabs a{display:flex;flex-direction:column;align-items:center;gap:2px;min-height:48px;justify-content:center;font-size:11px;font-weight:500;color:var(--ink-3);text-decoration:none;border-radius:12px}
+.tabs a svg{width:22px;height:22px}
+.tabs a[aria-current]{color:var(--ink);font-weight:600}
+.tabs a[aria-current] svg{background:var(--bg);border-radius:8px;padding:2px;width:26px;height:26px}
+.phone .hero{padding:28px 0 16px}.phone .hero h1{font-size:30px}
+.phone .search{flex-direction:column}.phone .btn{width:100%}
+.phone .steps{grid-template-columns:1fr}
+.phone .q{grid-template-columns:40px 1fr}.phone .q .fig{grid-column:2;text-align:left}
+.phone .head{padding:16px}.phone .verdict{text-align:left}.phone .meter{justify-content:flex-start}
+.phone .stats{grid-template-columns:1fr 1fr}
+.phone .hold{grid-template-columns:40px 1fr}.phone .hold .num{grid-column:2;text-align:left}
+@media (max-width:640px){.steps{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}.q{grid-template-columns:40px 1fr}.q .fig{grid-column:2;text-align:left}.search{flex-direction:column}.btn{width:100%}.hold{grid-template-columns:40px 1fr}.hold .num{grid-column:2;text-align:left}}
+</style>
+</head>
+<body>
+<!-- Reusable icons (Lucide-style strokes) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></symbol>
+    <symbol id="brief" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="7.5" width="17" height="12" rx="2"/><path d="M9 7.5V6a1.5 1.5 0 0 1 1.5-1.5h3A1.5 1.5 0 0 1 15 6v1.5"/></symbol>
+    <symbol id="bars" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19V10M11 19V5M17 19v-7M3 19.5h18"/></symbol>
+    <symbol id="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l3 3 5-6"/></symbol>
+    <symbol id="warn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17v.01"/></symbol>
+    <symbol id="x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/></symbol>
+    <symbol id="minus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8.5 12h7"/></symbol>
+    <symbol id="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></symbol>
+    <symbol id="back" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></symbol>
+    <symbol id="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+    <symbol id="mail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5.5" width="17" height="13" rx="2"/><path d="M4 7l8 6 8-6"/></symbol>
+    <symbol id="lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10.5" width="14" height="9.5" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></symbol>
+    <symbol id="shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/></symbol>
+  </defs>
+</svg>
+
+<div class="sheet">
+  <h1>Stock Analyst: UI refresh mockup</h1>
+  <p class="lede">Same warm off-white, near-black and Inter type as today. Nothing is added unless it helps someone read, trust or find something faster. All numbers below are <b>sample data for illustration</b>.</p>
+
+  <!-- ===================== 1. SEARCH ===================== -->
+  <h2>1 · Search (home)</h2>
+  <p class="note">Gives the page a point of view: a status eyebrow, a faint grid behind the heading, a larger search box with a keyboard hint, one-tap examples, a three-step explainer and recent reports as tidy cards.</p>
+  <ul class="changes"><li>Eyebrow pill</li><li>Faint grid hero</li><li>Search icon + “/” shortcut</li><li>“Try” chips</li><li>How it works</li><li>Recent as cards with status dot</li><li>Avatar in header</li></ul>
+  <div class="browser">
+    <div class="browser-bar"><i></i><i></i><i></i><span>your-app.vercel.app</span></div>
+    <div class="wrap">
+      <header class="topbar">
+        <span class="brand"><span class="brand-mark">SA</span> Stock Analyst</span>
+        <div class="user"><span class="avatar">D</span><span>dev@example.com</span><a href="#">Log out</a></div>
+      </header>
+      <nav class="nav" aria-label="Main">
+        <a href="#" aria-current="page"><svg><use href="#search"/></svg>Search</a>
+        <a href="#"><svg><use href="#brief"/></svg>My stocks</a>
+        <a href="#"><svg><use href="#bars"/></svg>Market today</a>
+      </nav>
+      <section class="hero">
+        <span class="eyebrow"><span class="dot"></span>NSE-listed companies · plain words</span>
+        <h1>Research a stock in <em>five questions</em></h1>
+        <p>A plain-words report with the latest news and the numbers behind it. Every fact is linked to its source.</p>
+        <div class="search">
+          <div class="field"><svg class="lead"><use href="#search"/></svg><input value="abb" aria-label="NSE symbol or company name"><kbd>/</kbd></div>
+          <button class="btn">Research <svg><use href="#arrow"/></svg></button>
+        </div>
+        <div class="suggest" role="listbox" aria-label="Matching stocks">
+          <div aria-selected="true"><span style="font:600 15px var(--font-sans);color:var(--ink)"><mark>ABB</mark> India Limited</span><span>ABB</span></div>
+          <div><span><mark>ABB</mark>OTT Industries</span><span>ABBOTINDIA</span></div>
+          <div><span>Cr<mark>abb</mark>e Textiles</span><span>CRABBE</span></div>
+        </div>
+        <div class="try">Try <b>TITAN</b><b>HDFCBANK</b><b>TATAMOTORS</b></div>
+      </section>
+      <ol class="steps">
+        <li><span class="n">1</span><b>Search</b><p>Type a symbol or company name.</p></li>
+        <li><span class="n">2</span><b>Read five answers</b><p>Growth, efficiency, debt, price and news.</p></li>
+        <li><span class="n">3</span><b>Check the source</b><p>Each fact links to where it came from.</p></li>
+      </ol>
+      <div class="sec"><h2>Stocks you looked at</h2><span>Newest first</span></div>
+      <ul class="cards">
+        <li><a class="row" href="#"><span class="tile">TITN</span><span class="t"><b>Titan Company</b><span>Today, 10:42 am</span></span><span class="pill green"><svg><use href="#check"/></svg>Looks solid</span><svg class="chev"><use href="#chev"/></svg></a></li>
+        <li><a class="row" href="#"><span class="tile">ABB</span><span class="t"><b>ABB India</b><span>Yesterday</span></span><span class="pill amber"><svg><use href="#warn"/></svg>Mixed</span><svg class="chev"><use href="#chev"/></svg></a></li>
+        <li><a class="row" href="#"><span class="tile">ZOMT</span><span class="t"><b>Sample Company Ltd</b><span>3 days ago</span></span><span class="pill red"><svg><use href="#x"/></svg>Be careful</span><svg class="chev"><use href="#chev"/></svg></a></li>
+      </ul>
+      <div class="foot"><svg><use href="#shield"/></svg>Research aid, not financial advice.</div>
+    </div>
+  </div>
+
+  <!-- ===================== 2. REPORT ===================== -->
+  <h2>2 · Report</h2>
+  <p class="note">The verdict moves up into a header card with a five-segment health meter, so the answer is readable in one glance before any detail. Each question gets a coloured icon tile and its key figure in mono type.</p>
+  <ul class="changes"><li>Header card with verdict</li><li>Five-segment meter</li><li>Icon tiles for each answer</li><li>Key figure per answer</li><li>Summary with accent rule</li><li>Source chips stay</li></ul>
+  <div class="browser">
+    <div class="browser-bar"><i></i><i></i><i></i><span>your-app.vercel.app/report.html?symbol=ABB</span></div>
+    <div class="wrap">
+      <header class="topbar"><span class="brand"><span class="brand-mark">SA</span> Stock Analyst</span><div class="user"><span class="avatar">D</span><a href="#">Log out</a></div></header>
+      <nav class="nav"><a href="#" aria-current="page"><svg><use href="#search"/></svg>Search</a><a href="#"><svg><use href="#brief"/></svg>My stocks</a><a href="#"><svg><use href="#bars"/></svg>Market today</a></nav>
+      <a class="back" href="#"><svg><use href="#back"/></svg>Back to Search</a>
+      <div class="head">
+        <div><h1>ABB India</h1><div class="sub"><span class="sym">ABB</span><span>₹ 5,840.20</span><span>Updated today, 10:42 am IST</span></div></div>
+        <div class="verdict"><span class="pill green"><svg><use href="#check"/></svg>Looks solid</span><div class="meter" aria-label="3 green, 1 amber, 1 grey"><i class="g"></i><i class="g"></i><i class="g"></i><i class="a"></i><i></i></div><small>3 of 5 answers are good</small></div>
+      </div>
+      <p class="summary"><b>In short:</b> sales and profit have grown steadily and the company carries almost no debt. The share price is on the high side compared with its past <span class="cite">F2</span><span class="cite">F4</span>. No worrying news in the last 30 days <span class="cite">N1</span>.</p>
+      <div class="sec"><h2>The five questions</h2><span>Source: Screener.in</span></div>
+      <div class="cards">
+        <div class="q"><span class="ico green"><svg><use href="#check"/></svg></span><div><h3>Is the business growing?</h3><p>Sales grew about 18% a year over the last 3 years.</p></div><div class="fig">18%<small>3-yr sales growth</small></div></div>
+        <div class="q"><span class="ico green"><svg><use href="#check"/></svg></span><div><h3>Does it make money efficiently?</h3><p>It earns a healthy return on the money invested in it.</p></div><div class="fig">24%<small>return on capital</small></div></div>
+        <div class="q"><span class="ico green"><svg><use href="#check"/></svg></span><div><h3>Can it handle its debt?</h3><p>Debt is very small next to what the owners have put in.</p></div><div class="fig">0.02<small>debt to equity</small></div></div>
+        <div class="q"><span class="ico amber"><svg><use href="#warn"/></svg></span><div><h3>Is the share price expensive?</h3><p>The price is high next to the company’s own past average.</p></div><div class="fig">62×<small>price to earnings</small></div></div>
+        <div class="q"><span class="ico grey"><svg><use href="#minus"/></svg></span><div><h3>Is anything bad happening?</h3><p>Not enough recent news to say.</p></div><div class="fig">–<small>2 articles</small></div></div>
+      </div>
+      <div class="sec"><h2>Latest news</h2><span>Last 30 days</span></div>
+      <ul class="news">
+        <li><div>Company reports steady quarter, order book up<small>Economic Times · 2 days ago</small></div><span class="pill grey">Neutral</span></li>
+        <li><div>New plant expansion approved by the board<small>Business Standard · 6 days ago</small></div><span class="pill green">Good</span></li>
+      </ul>
+      <div class="foot"><svg><use href="#shield"/></svg>Research aid, not financial advice.</div>
+    </div>
+  </div>
+
+  <!-- ===================== 3. MY STOCKS ===================== -->
+  <h2>3 · My stocks</h2>
+  <p class="note">A three-number summary on top, then one card per stock. “Look at this” flags get a small amber line with the reason, instead of hiding in a table cell.</p>
+  <ul class="changes"><li>Summary stat cards</li><li>Card per stock</li><li>Flag reason line</li></ul>
+  <div class="browser">
+    <div class="browser-bar"><i></i><i></i><i></i><span>your-app.vercel.app/holdings.html</span></div>
+    <div class="wrap">
+      <header class="topbar"><span class="brand"><span class="brand-mark">SA</span> Stock Analyst</span><div class="user"><span class="avatar">D</span><a href="#">Log out</a></div></header>
+      <nav class="nav"><a href="#"><svg><use href="#search"/></svg>Search</a><a href="#" aria-current="page"><svg><use href="#brief"/></svg>My stocks</a><a href="#"><svg><use href="#bars"/></svg>Market today</a></nav>
+      <div class="sec" style="margin-top:28px"><h2 style="font-size:22px;letter-spacing:-.02em">My stocks</h2><button class="btn" style="height:40px;font-size:14px;padding:0 16px">Add a stock</button></div>
+      <div class="stats">
+        <div class="stat"><small>Value today</small><b>₹ 4,82,300</b></div>
+        <div class="stat"><small>Total gain</small><b class="up">+ ₹ 61,450</b></div>
+        <div class="stat"><small>Look at this</small><b>1 of 3</b></div>
+      </div>
+      <div class="cards" style="margin-top:14px">
+        <div class="hold"><span class="tile">TITN</span><div><b>Titan Company</b><div style="font-size:12px;color:var(--ink-3)">40 shares · bought at ₹ 2,980</div></div><span class="pill green"><svg><use href="#check"/></svg>Looks solid</span><div class="num">₹ 1,48,000<small>+ ₹ 28,800</small></div></div>
+        <div class="hold"><span class="tile">ABB</span><div><b>ABB India</b><div style="font-size:12px;color:var(--ink-3)">25 shares · bought at ₹ 4,900</div><div class="flag"><svg><use href="#warn"/></svg>Label went from Looks solid to Mixed</div></div><span class="pill amber"><svg><use href="#warn"/></svg>Mixed</span><div class="num">₹ 1,46,005<small>+ ₹ 23,505</small></div></div>
+        <div class="hold"><span class="tile">HDFB</span><div><b>HDFC Bank</b><div style="font-size:12px;color:var(--ink-3)">100 shares · bought at ₹ 1,540</div></div><span class="pill green"><svg><use href="#check"/></svg>Looks solid</span><div class="num">₹ 1,88,295<small>+ ₹ 9,145</small></div></div>
+      </div>
+      <div class="foot"><svg><use href="#shield"/></svg>Research aid, not financial advice.</div>
+    </div>
+  </div>
+
+  <!-- ===================== 4. LOGIN + SPLASH ===================== -->
+  <h2>4 · Sign in, and the “checking your session” screen</h2>
+  <p class="note">The sign-in card gets icons in the fields and a small reassurance line. The right-hand screen is the proposed fix for the flash-then-redirect: while the app confirms you are signed in, only this calm branded screen shows. Then you see either the page or the sign-in card, never the page flickering away.</p>
+  <ul class="changes"><li>Icons in fields</li><li>Soft glow behind card</li><li>Branded session-check screen</li><li>Reassurance line</li></ul>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px">
+    <div class="browser"><div class="browser-bar"><i></i><i></i><i></i><span>your-app.vercel.app/login.html</span></div>
+      <div class="login"><div class="card">
+        <span class="brand"><span class="brand-mark">SA</span> Stock Analyst</span>
+        <h1>Welcome back</h1><p>Sign in to see your reports and stocks.</p>
+        <label>Email</label><div class="in"><svg><use href="#mail"/></svg>you@example.com</div>
+        <label>Password</label><div class="in"><svg><use href="#lock"/></svg>••••••••••<a href="#">Show</a></div>
+        <button class="btn">Sign in</button>
+        <div class="secure"><svg><use href="#shield"/></svg>Your session stays on this device.</div>
+      </div></div></div>
+    <div class="browser"><div class="browser-bar"><i></i><i></i><i></i><span>your-app.vercel.app/ (first 1 to 2 seconds)</span></div>
+      <div class="splash" role="status"><div><div class="brand-mark">SA</div><p>Checking your session…</p><small>This only takes a moment.</small><div class="bar"><i></i></div></div></div></div>
+  </div>
+
+  <!-- ===================== 5. PHONE ===================== -->
+  <h2>5 · On a phone</h2>
+  <p class="note">The same design in one column, with the bottom tab bar (current tab gets a soft highlight) and full-width buttons.</p>
+  <div class="phones">
+    <div class="phone"><div class="phone-in">
+      <header class="topbar"><span class="brand"><span class="brand-mark">SA</span> Stock Analyst</span><div class="user"><span class="avatar">D</span></div></header>
+      <section class="hero"><span class="eyebrow"><span class="dot"></span>NSE · plain words</span><h1>Research a stock in <em>five questions</em></h1><p>Plain-words reports, every fact linked to its source.</p>
+        <div class="search"><div class="field"><svg class="lead"><use href="#search"/></svg><input placeholder="Symbol or company name" aria-label="Search"></div><button class="btn">Research <svg><use href="#arrow"/></svg></button></div>
+        <div class="try">Try <b>TITAN</b><b>HDFCBANK</b></div></section>
+      <div class="sec" style="margin-top:8px"><h2>Stocks you looked at</h2></div>
+      <ul class="cards"><li><a class="row" href="#"><span class="tile">TITN</span><span class="t"><b>Titan Company</b><span>Today</span></span><span class="pill green"><svg><use href="#check"/></svg>Solid</span></a></li></ul>
+      <nav class="tabs"><a href="#" aria-current="page"><svg><use href="#search"/></svg>Search</a><a href="#"><svg><use href="#brief"/></svg>My stocks</a><a href="#"><svg><use href="#bars"/></svg>Market</a></nav>
+    </div></div>
+    <div class="phone"><div class="phone-in">
+      <header class="topbar"><span class="brand"><span class="brand-mark">SA</span> Stock Analyst</span></header>
+      <a class="back" href="#"><svg><use href="#back"/></svg>Back to Search</a>
+      <div class="head"><div><h1>ABB India</h1><div class="sub"><span class="sym">ABB</span><span>₹ 5,840.20</span></div></div>
+        <div class="verdict"><span class="pill green"><svg><use href="#check"/></svg>Looks solid</span><div class="meter"><i class="g"></i><i class="g"></i><i class="g"></i><i class="a"></i><i></i></div><small>3 of 5 answers are good</small></div></div>
+      <div class="cards" style="margin-top:12px">
+        <div class="q"><span class="ico green"><svg><use href="#check"/></svg></span><div><h3>Is the business growing?</h3><p>Sales grew about 18% a year.</p></div><div class="fig">18%<small>3-yr sales growth</small></div></div>
+        <div class="q"><span class="ico amber"><svg><use href="#warn"/></svg></span><div><h3>Is the share price expensive?</h3><p>High next to its own past average.</p></div><div class="fig">62×<small>price to earnings</small></div></div>
+      </div>
+      <nav class="tabs" style="margin-top:16px"><a href="#" aria-current="page"><svg><use href="#search"/></svg>Search</a><a href="#"><svg><use href="#brief"/></svg>My stocks</a><a href="#"><svg><use href="#bars"/></svg>Market</a></nav>
+    </div></div>
+  </div>
+</div>
+</body>
+</html>
