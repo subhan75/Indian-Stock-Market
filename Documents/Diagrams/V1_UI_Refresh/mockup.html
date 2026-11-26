@@ -184,6 +184,35 @@ svg{display:block;flex:none}
 .phone .head{padding:16px}.phone .verdict{text-align:left}.phone .meter{justify-content:flex-start}
 .phone .stats{grid-template-columns:1fr 1fr}
 .phone .hold{grid-template-columns:40px 1fr}.phone .hold .num{grid-column:2;text-align:left}
+/* ---------- DARK ELEMENTS (v2): one near-black "night" tone, light content stays light ---------- */
+:root{--night:#14141a;--night-2:#1f2028;--night-line:#2d2f3a;--on-night:#f2f2ee;--on-night-2:#b8bbc6;   /* NEW tokens; text on night is 9:1 or better */
+  --accent-night:#8fb0ff;--green-night:#4ec98a;--amber-night:#f0b34a;--red-night:#f08a72}
+/* full-width dark navigation band (header + menu) */
+.topbar{background:var(--night);margin:0 -20px;padding:14px 20px;box-shadow:0 0 0 100vmax var(--night);clip-path:inset(0 -100vmax)}
+.brand{color:var(--on-night)}
+.brand-mark{background:#fff;color:var(--night);box-shadow:none}
+.user{color:var(--on-night-2)} .user a{color:var(--on-night)}
+.avatar{background:var(--night-2);border-color:var(--night-line);color:var(--on-night)}
+.nav{background:var(--night);margin:0 -20px;padding:0 20px;box-shadow:0 0 0 100vmax var(--night);clip-path:inset(0 -100vmax);border-bottom:1px solid var(--night-line)}
+.nav a{color:var(--on-night-2)}
+.nav a[aria-current]{color:#fff;border-bottom-color:var(--accent-night)}
+.card .brand{color:var(--ink)} .card .brand-mark{background:var(--ink);color:#fff}
+/* report header card */
+.head{background:var(--night);border-color:var(--night);color:var(--on-night)}
+.head h1{color:#fff} .head .sub,.verdict small{color:var(--on-night-2)}
+.head .sub .sym{background:var(--night-2);border-color:var(--night-line);color:var(--on-night)}
+.meter i{background:var(--night-line)} .meter i.g{background:var(--green-night)} .meter i.a{background:var(--amber-night)} .meter i.r{background:var(--red-night)}
+/* highlighted stat on My stocks */
+.stat.dark{background:var(--night);border-color:var(--night)} .stat.dark small{color:var(--on-night-2)} .stat.dark b{color:#fff}
+/* sign-in page and session-check screen */
+.login{background:radial-gradient(560px 280px at 50% 0,rgb(143 176 255 / .22),transparent 70%),var(--night)}
+.card{border-color:var(--night-line);box-shadow:0 20px 60px rgb(0 0 0 / .35)}
+.splash{background:var(--night)} .splash p{color:var(--on-night)} .splash small{color:var(--on-night-2)}
+.bar{background:var(--night-line)} .bar i{background:var(--accent-night)}
+/* phone */
+.phone .topbar{margin:0 -16px;padding:14px 16px}
+.tabs{background:rgb(20 20 26 / .97);border-top:1px solid var(--night-line)}
+.tabs a{color:var(--on-night-2)} .tabs a[aria-current]{color:#fff} .tabs a[aria-current] svg{background:var(--night-line)}
 @media (max-width:640px){.steps{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}.q{grid-template-columns:40px 1fr}.q .fig{grid-column:2;text-align:left}.search{flex-direction:column}.btn{width:100%}.hold{grid-template-columns:40px 1fr}.hold .num{grid-column:2;text-align:left}}
 </style>
 </head>
@@ -209,12 +238,12 @@ svg{display:block;flex:none}
 
 <div class="sheet">
   <h1>Stock Analyst: UI refresh mockup</h1>
-  <p class="lede">Same warm off-white, near-black and Inter type as today. Nothing is added unless it helps someone read, trust or find something faster. All numbers below are <b>sample data for illustration</b>.</p>
+  <p class="lede">Same warm off-white, near-black and Inter type as today, now with one dark “night” tone for the navigation band, report header, key figure, sign-in and phone tab bar, so the light content stands out against it. Nothing is added unless it helps someone read, trust or find something faster. All numbers below are <b>sample data for illustration</b>.</p>
 
   <!-- ===================== 1. SEARCH ===================== -->
   <h2>1 · Search (home)</h2>
   <p class="note">Gives the page a point of view: a status eyebrow, a faint grid behind the heading, a larger search box with a keyboard hint, one-tap examples, a three-step explainer and recent reports as tidy cards.</p>
-  <ul class="changes"><li>Eyebrow pill</li><li>Faint grid hero</li><li>Search icon + “/” shortcut</li><li>“Try” chips</li><li>How it works</li><li>Recent as cards with status dot</li><li>Avatar in header</li></ul>
+  <ul class="changes"><li>Dark navigation band</li><li>Blue active-tab highlight</li><li>Eyebrow pill</li><li>Faint grid hero</li><li>Search icon + “/” shortcut</li><li>“Try” chips</li><li>How it works</li><li>Recent as cards with status dot</li><li>Avatar in header</li></ul>
   <div class="browser">
     <div class="browser-bar"><i></i><i></i><i></i><span>your-app.vercel.app</span></div>
     <div class="wrap">
@@ -260,7 +289,7 @@ svg{display:block;flex:none}
   <!-- ===================== 2. REPORT ===================== -->
   <h2>2 · Report</h2>
   <p class="note">The verdict moves up into a header card with a five-segment health meter, so the answer is readable in one glance before any detail. Each question gets a coloured icon tile and its key figure in mono type.</p>
-  <ul class="changes"><li>Header card with verdict</li><li>Five-segment meter</li><li>Icon tiles for each answer</li><li>Key figure per answer</li><li>Summary with accent rule</li><li>Source chips stay</li></ul>
+  <ul class="changes"><li>Dark header card with verdict</li><li>Five-segment meter</li><li>Icon tiles for each answer</li><li>Key figure per answer</li><li>Summary with accent rule</li><li>Source chips stay</li></ul>
   <div class="browser">
     <div class="browser-bar"><i></i><i></i><i></i><span>your-app.vercel.app/report.html?symbol=ABB</span></div>
     <div class="wrap">
@@ -292,7 +321,7 @@ svg{display:block;flex:none}
   <!-- ===================== 3. MY STOCKS ===================== -->
   <h2>3 · My stocks</h2>
   <p class="note">A three-number summary on top, then one card per stock. “Look at this” flags get a small amber line with the reason, instead of hiding in a table cell.</p>
-  <ul class="changes"><li>Summary stat cards</li><li>Card per stock</li><li>Flag reason line</li></ul>
+  <ul class="changes"><li>Dark highlight stat</li><li>Summary stat cards</li><li>Card per stock</li><li>Flag reason line</li></ul>
   <div class="browser">
     <div class="browser-bar"><i></i><i></i><i></i><span>your-app.vercel.app/holdings.html</span></div>
     <div class="wrap">
@@ -300,7 +329,7 @@ svg{display:block;flex:none}
       <nav class="nav"><a href="#"><svg><use href="#search"/></svg>Search</a><a href="#" aria-current="page"><svg><use href="#brief"/></svg>My stocks</a><a href="#"><svg><use href="#bars"/></svg>Market today</a></nav>
       <div class="sec" style="margin-top:28px"><h2 style="font-size:22px;letter-spacing:-.02em">My stocks</h2><button class="btn" style="height:40px;font-size:14px;padding:0 16px">Add a stock</button></div>
       <div class="stats">
-        <div class="stat"><small>Value today</small><b>₹ 4,82,300</b></div>
+        <div class="stat dark"><small>Value today</small><b>₹ 4,82,300</b></div>
         <div class="stat"><small>Total gain</small><b class="up">+ ₹ 61,450</b></div>
         <div class="stat"><small>Look at this</small><b>1 of 3</b></div>
       </div>
@@ -316,7 +345,7 @@ svg{display:block;flex:none}
   <!-- ===================== 4. LOGIN + SPLASH ===================== -->
   <h2>4 · Sign in, and the “checking your session” screen</h2>
   <p class="note">The sign-in card gets icons in the fields and a small reassurance line. The right-hand screen is the proposed fix for the flash-then-redirect: while the app confirms you are signed in, only this calm branded screen shows. Then you see either the page or the sign-in card, never the page flickering away.</p>
-  <ul class="changes"><li>Icons in fields</li><li>Soft glow behind card</li><li>Branded session-check screen</li><li>Reassurance line</li></ul>
+  <ul class="changes"><li>Dark sign-in backdrop</li><li>Icons in fields</li><li>Blue glow behind card</li><li>Dark branded session-check screen</li><li>Reassurance line</li></ul>
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px">
     <div class="browser"><div class="browser-bar"><i></i><i></i><i></i><span>your-app.vercel.app/login.html</span></div>
       <div class="login"><div class="card">
